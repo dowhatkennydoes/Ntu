@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusIcon, DocumentTextIcon, MicrophoneIcon, VideoCameraIcon, BookOpenIcon, ExclamationTriangleIcon, LinkIcon, CloudArrowUpIcon, AcademicCapIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, DocumentTextIcon, MicrophoneIcon, VideoCameraIcon, BookOpenIcon, ExclamationTriangleIcon, LinkIcon, CloudArrowUpIcon, AcademicCapIcon, SpeakerWaveIcon, BeakerIcon, ChatBubbleLeftRightIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
 import { useWorkflow } from './WorkflowProvider'
 import { WorkflowRunner } from './WorkflowRunner'
 import { ErrorDemoWorkflow } from './ErrorDemoWorkflow'
@@ -11,6 +11,11 @@ import { NotebookCreationWorkflow } from './NotebookCreationWorkflow'
 import { FlashcardCreationWorkflow } from './FlashcardCreationWorkflow'
 import { VoiceNoteWorkflow } from './VoiceNoteWorkflow'
 import { KnowledgeUploadWorkflow } from './KnowledgeUploadWorkflow'
+import { TranscriptEditingWorkflow } from './TranscriptEditingWorkflow'
+import { VoiceTranscriptionWorkflow } from './VoiceTranscriptionWorkflow'
+import { JunctionSemanticSearchWorkflow } from './JunctionSemanticSearchWorkflow'
+import { MereAIAssistantWorkflow } from './MereAIAssistantWorkflow'
+import { MarathonWorkflowBuilder } from './MarathonWorkflowBuilder'
 
 interface WorkflowCard {
   id: string
@@ -61,7 +66,7 @@ export function WorkflowDashboard() {
           title: 'Add Tags',
           description: 'Organize with smart tags',
         },
-      ]
+      ],
     },
     {
       id: 'notebook-creation',
@@ -76,7 +81,7 @@ export function WorkflowDashboard() {
           description: 'Set up your new notebook with templates and organization',
           component: <NotebookCreationWorkflow />,
         },
-      ]
+      ],
     },
     {
       id: 'voice-note',
@@ -92,7 +97,23 @@ export function WorkflowDashboard() {
           component: <VoiceNoteWorkflow />,
           aiAssisted: true,
         },
-      ]
+      ],
+    },
+    {
+      id: 'voice-transcription',
+      title: 'Real-time Voice Transcription',
+      description: 'Advanced live transcription with Whisper, speaker detection, and export',
+      icon: SpeakerWaveIcon,
+      color: 'bg-green-500',
+      steps: [
+        {
+          id: 'transcription-workflow',
+          title: 'Voice Transcription',
+          description: 'Real-time transcription with AI speaker identification',
+          component: <VoiceTranscriptionWorkflow />,
+          aiAssisted: true,
+        },
+      ],
     },
     {
       id: 'file-processing',
@@ -107,7 +128,7 @@ export function WorkflowDashboard() {
           description: 'Drag and drop or select files to upload',
           component: <FileProcessingWorkflow />,
         },
-      ]
+      ],
     },
     {
       id: 'flashcard-creation',
@@ -123,7 +144,7 @@ export function WorkflowDashboard() {
           component: <FlashcardCreationWorkflow />,
           aiAssisted: true,
         },
-      ]
+      ],
     },
     {
       id: 'knowledge-upload',
@@ -139,7 +160,23 @@ export function WorkflowDashboard() {
           component: <KnowledgeUploadWorkflow />,
           aiAssisted: true,
         },
-      ]
+      ],
+    },
+    {
+      id: 'semantic-research',
+      title: 'Semantic Research & Q&A',
+      description: 'NotebookLM-style research with multi-file Q&A, citations, and AI analysis',
+      icon: BeakerIcon,
+      color: 'bg-purple-500',
+      steps: [
+        {
+          id: 'junction-workflow',
+          title: 'Semantic Research Session',
+          description: 'Upload documents and ask AI questions with precise citations',
+          component: <JunctionSemanticSearchWorkflow />,
+          aiAssisted: true,
+        },
+      ],
     },
     {
       id: 'error-demo',
@@ -159,7 +196,23 @@ export function WorkflowDashboard() {
           title: 'Recovery Success',
           description: 'Workflow completed successfully',
         },
-      ]
+      ],
+    },
+    {
+      id: 'mere-assistant',
+      title: 'Mere AI Assistant',
+      description: 'Chat with your intelligent AI assistant with memory awareness and app integration',
+      icon: ChatBubbleLeftRightIcon,
+      color: 'bg-blue-500',
+      steps: [
+        {
+          id: 'mere-chat',
+          title: 'AI Chat Session',
+          description: 'Intelligent conversation with memory context and workflow integration',
+          component: <MereAIAssistantWorkflow />,
+          aiAssisted: true,
+        },
+      ],
     },
     {
       id: 'memory-chain',
@@ -175,9 +228,25 @@ export function WorkflowDashboard() {
           component: <MemoryChainWorkflow />,
           aiAssisted: true,
         },
-      ]
+      ],
     },
-  ]
+    {
+      id: 'marathon-builder',
+      title: 'Marathon Workflow Builder',
+      description: 'Visual automation platform with drag-and-drop nodes, triggers, and execution',
+      icon: WrenchScrewdriverIcon,
+      color: 'bg-indigo-500',
+      steps: [
+        {
+          id: 'workflow-builder',
+          title: 'Visual Workflow Builder',
+          description: 'Create automation flows with drag-and-drop interface',
+          component: <MarathonWorkflowBuilder />,
+          aiAssisted: true,
+        },
+      ],
+    },
+  ];
 
   const handleStartWorkflow = (workflow: WorkflowCard) => {
     startWorkflow(workflow.id, workflow.title, workflow.steps)
@@ -185,14 +254,14 @@ export function WorkflowDashboard() {
 
   if (currentWorkflow) {
     return (
-      <div className="p-6">
+      <div className="min-h-screen overflow-y-auto p-6">
         <WorkflowRunner />
       </div>
     )
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen overflow-y-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Ntu Workflows</h1>
         <p className="mt-2 text-gray-600">
