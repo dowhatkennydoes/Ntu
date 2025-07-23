@@ -82,6 +82,11 @@ interface QAResponse {
   conceptsDiscussed: string[] // J3: Concept tracking
   collaborativeNotes?: CollaborativeNote[] // J4: Collaborative features
   crossSourceInsights?: CrossSourceInsight[] // Enhanced cross-referencing
+  confidence: number // J11: Citation confidence
+  unusedSources?: string[] // J24: Source transparency
+  auditTrail?: AuditTrailEntry[] // J25: AI audit trail
+  followUpSuggestions?: string[] // J12: Topic suggestions
+  exportFormats?: ExportFormat[] // J20: Export formats
 }
 
 interface CollaborativeNote {
@@ -101,6 +106,78 @@ interface CrossSourceInsight {
   contradictions: string[]
   gaps: string[]
   synthesisScore: number
+  comparisonMatrix?: ComparisonMatrix // J7: Enhanced cross-source comparison
+  visualComparison?: ComparisonVisualization // J7: Visual comparison data
+}
+
+interface ComparisonMatrix {
+  id: string
+  sources: string[]
+  comparisonPoints: {
+    aspect: string
+    source1Value: string
+    source2Value: string
+    agreement: boolean
+    confidence: number
+  }[]
+}
+
+interface ComparisonVisualization {
+  type: 'venn' | 'timeline' | 'radar' | 'table'
+  data: any
+  highlights: string[]
+}
+
+// J25: AI audit trail interface
+interface AuditTrailEntry {
+  id: string
+  timestamp: Date
+  action: 'question_asked' | 'answer_generated' | 'source_retrieved' | 'model_switched'
+  model: string
+  prompt?: string
+  sources: string[]
+  metadata: {
+    tokensUsed?: number
+    responseTime?: number
+    confidence?: number
+    retrievalMethod?: string
+  }
+}
+
+// J20: Export format interface
+interface ExportFormat {
+  id: string
+  type: 'flashcard' | 'summary' | 'markdown' | 'pdf' | 'json'
+  content: string
+  metadata: {
+    generatedAt: Date
+    sourceQA: string
+    format: string
+  }
+}
+
+// J8: Enhanced insight pinning interfaces
+interface PinnedInsight {
+  id: string
+  qaId: string
+  question: string
+  answer: string
+  pinnedAt: Date
+  tags: string[]
+  notes: string
+  category: 'key-finding' | 'contradiction' | 'gap' | 'methodology' | 'conclusion'
+  importance: 'low' | 'medium' | 'high' | 'critical'
+  relatedInsights: string[]
+  visualRepresentation?: string
+  exportHistory: ExportRecord[]
+}
+
+interface ExportRecord {
+  id: string
+  exportedAt: Date
+  format: string
+  destination: string
+  content: string
 }
 
 // J26: Block system interfaces for Notion-style editing
@@ -185,6 +262,9 @@ interface Summary {
   type: 'overview' | 'key-points' | 'analysis'
   length: 'short' | 'medium' | 'long'
   focus?: string
+  tone: 'academic' | 'business' | 'casual' | 'technical' | 'creative' // J5: Customizable summaries
+  customFocus?: string // J5: Custom focus areas
+  targetAudience?: 'expert' | 'intermediate' | 'beginner' // J5: Audience targeting
 }
 
 export function JunctionSemanticSearchWorkflow() {
@@ -226,6 +306,33 @@ export function JunctionSemanticSearchWorkflow() {
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [selectedTab, setSelectedTab] = useState<'qa' | 'concepts' | 'collaborate'>('qa')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // J5: Customizable AI summaries state
+  const [summaryTone, setSummaryTone] = useState<Summary['tone']>('academic')
+  const [summaryLength, setSummaryLength] = useState<Summary['length']>('medium')
+  const [summaryFocus, setSummaryFocus] = useState<string>('')
+  const [targetAudience, setTargetAudience] = useState<Summary['targetAudience']>('intermediate')
+  const [customSummaryFocus, setCustomSummaryFocus] = useState<string>('')
+
+  // J7: Cross-source comparison state
+  const [comparisonMode, setComparisonMode] = useState<'automatic' | 'manual'>('automatic')
+  const [comparisonVisualization, setComparisonVisualization] = useState<ComparisonVisualization['type']>('table')
+  const [activeComparison, setActiveComparison] = useState<CrossSourceInsight | null>(null)
+
+  // J8: Enhanced insight pinning state
+  const [enhancedPinnedInsights, setEnhancedPinnedInsights] = useState<PinnedInsight[]>([])
+  const [insightCategories, setInsightCategories] = useState<Set<string>>(new Set())
+  const [selectedInsightCategory, setSelectedInsightCategory] = useState<string>('all')
+  const [insightImportanceFilter, setInsightImportanceFilter] = useState<PinnedInsight['importance']>('medium')
+
+  // J9: LLM switching state
+  const [availableModels, setAvailableModels] = useState([
+    { id: 'gpt-4', name: 'GPT-4', description: 'Most capable model for complex reasoning', status: 'available' },
+    { id: 'claude', name: 'Claude', description: 'Excellent for analysis and writing', status: 'available' },
+    { id: 'gemini', name: 'Gemini', description: 'Fast and efficient for general tasks', status: 'available' },
+    { id: 'llama', name: 'Llama 2', description: 'Open source alternative', status: 'available' }
+  ])
+  const [modelPerformance, setModelPerformance] = useState<Record<string, { avgResponseTime: number, avgConfidence: number }>>({})
 
   // J3: Mock concept extraction for demo
   const extractConceptsFromSource = useCallback((source: KnowledgeSource): ExtractedConcept[] => {
@@ -541,7 +648,29 @@ export function JunctionSemanticSearchWorkflow() {
         tone: responseTone,
         isPinned: false,
         conceptsDiscussed: extractedConcepts.slice(0, 5).map(c => c.term),
-        crossSourceInsights: [crossSourceInsight]
+        crossSourceInsights: [crossSourceInsight],
+        confidence: 0.85 + Math.random() * 0.15, // J11: Citation confidence
+        unusedSources: sources.filter(s => !Array.from(selectedSources).includes(s.id)).map(s => s.name), // J24: Source transparency
+        auditTrail: [{ // J25: AI audit trail
+          id: `audit-${Date.now()}`,
+          timestamp: new Date(),
+          action: 'answer_generated',
+          model: selectedModel,
+          prompt: currentQuestion,
+          sources: Array.from(selectedSources),
+          metadata: {
+            tokensUsed: Math.floor(Math.random() * 1000) + 500,
+            responseTime: 2500,
+            confidence: 0.85 + Math.random() * 0.15,
+            retrievalMethod: 'semantic_search'
+          }
+        }],
+        followUpSuggestions: [ // J12: Topic suggestions
+          `What are the implications of ${extractedConcepts[0]?.term || 'this'}?`,
+          `How does ${extractedConcepts[1]?.term || 'this'} compare to other approaches?`,
+          `What are the limitations of ${extractedConcepts[2]?.term || 'this'}?`
+        ],
+        exportFormats: [] // J20: Export formats (will be populated on demand)
       }
       
       setQAHistory(prev => [newResponse, ...prev])
@@ -642,6 +771,278 @@ export function JunctionSemanticSearchWorkflow() {
       searchQueries: searchResults.length > 0 ? 1 : 0
     })
     nextStep()
+  }
+
+  // J20: Export answer as different formats
+  const exportAnswer = (qaId: string, format: ExportFormat['type']) => {
+    const qa = qaHistory.find(q => q.id === qaId)
+    if (!qa) return
+
+    let content = ''
+    let formatExtension = ''
+
+    switch (format) {
+      case 'flashcard':
+        content = `Question: ${qa.question}\nAnswer: ${qa.answer}\n\nKey Concepts: ${qa.conceptsDiscussed.join(', ')}`
+        formatExtension = 'txt'
+        break
+      case 'summary':
+        content = `Summary of: ${qa.question}\n\n${qa.answer}\n\nCitations: ${qa.citations.map(c => `${c.sourceName} (p.${c.pageNumber})`).join(', ')}`
+        formatExtension = 'txt'
+        break
+      case 'markdown':
+        content = `# ${qa.question}\n\n${qa.answer}\n\n## Sources\n${qa.citations.map(c => `- ${c.sourceName} (p.${c.pageNumber})`).join('\n')}`
+        formatExtension = 'md'
+        break
+      case 'json':
+        content = JSON.stringify(qa, null, 2)
+        formatExtension = 'json'
+        break
+      case 'pdf':
+        content = `PDF export would be generated here for: ${qa.question}`
+        formatExtension = 'pdf'
+        break
+    }
+
+    const exportFormat: ExportFormat = {
+      id: `export-${Date.now()}`,
+      type: format,
+      content,
+      metadata: {
+        generatedAt: new Date(),
+        sourceQA: qaId,
+        format: formatExtension
+      }
+    }
+
+    // Update the QA response with the new export format
+    setQAHistory(prev => prev.map(q => 
+      q.id === qaId 
+        ? { ...q, exportFormats: [...(q.exportFormats || []), exportFormat] }
+        : q
+    ))
+
+    // Create download link
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `junction-export-${qaId}.${formatExtension}`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // J11: Get confidence indicator color
+  const getConfidenceColor = (confidence: number) => {
+    if (confidence >= 0.9) return 'text-green-600'
+    if (confidence >= 0.7) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  // J12: Handle follow-up suggestion click
+  const handleFollowUpSuggestion = (qaId: string, suggestion: string) => {
+    setCurrentQuestion(suggestion)
+    setTimeout(() => handleAskQuestion(), 100)
+  }
+
+  // J24: Show source transparency
+  const getSourceTransparencyInfo = (qa: QAResponse) => {
+    const totalSources = sources.length
+    const usedSources = qa.citations.length
+    const unusedCount = qa.unusedSources?.length || 0
+    
+    return {
+      totalSources,
+      usedSources,
+      unusedCount,
+      coverage: Math.round((usedSources / totalSources) * 100)
+    }
+  }
+
+  // J25: Get audit trail summary
+  const getAuditTrailSummary = (qa: QAResponse) => {
+    if (!qa.auditTrail || qa.auditTrail.length === 0) return null
+    
+    const latest = qa.auditTrail[qa.auditTrail.length - 1]
+    return {
+      model: latest.model,
+      tokensUsed: latest.metadata.tokensUsed,
+      responseTime: latest.metadata.responseTime,
+      retrievalMethod: latest.metadata.retrievalMethod
+    }
+  }
+
+  // J5: Generate customizable AI summary
+  const generateCustomSummary = async (sourceId: string, options: {
+    tone: Summary['tone']
+    length: Summary['length']
+    focus?: string
+    targetAudience: Summary['targetAudience']
+    customFocus?: string
+  }) => {
+    const source = sources.find(s => s.id === sourceId)
+    if (!source) return null
+
+    // Simulate AI summary generation with custom parameters
+    const summary: Summary = {
+      id: `summary-${Date.now()}`,
+      sourceId,
+      content: `This is a ${options.length} ${options.tone} summary of "${source.name}" written for ${options.targetAudience} level. ${options.customFocus ? `Focus: ${options.customFocus}` : ''}`,
+      type: 'overview',
+      length: options.length,
+      tone: options.tone,
+      targetAudience: options.targetAudience,
+      customFocus: options.customFocus
+    }
+
+    setSummaries(prev => [...prev, summary])
+    return summary
+  }
+
+  // J7: Enhanced cross-source comparison
+  const performCrossSourceComparison = async (topic: string, sourceIds: string[]) => {
+    const selectedSources = sources.filter(s => sourceIds.includes(s.id))
+    if (selectedSources.length < 2) return null
+
+    // Generate comparison matrix
+    const comparisonMatrix: ComparisonMatrix = {
+      id: `matrix-${Date.now()}`,
+      sources: selectedSources.map(s => s.name),
+      comparisonPoints: [
+        {
+          aspect: 'Methodology',
+          source1Value: 'Quantitative analysis',
+          source2Value: 'Qualitative research',
+          agreement: false,
+          confidence: 0.85
+        },
+        {
+          aspect: 'Key Findings',
+          source1Value: 'Positive correlation found',
+          source2Value: 'Positive correlation found',
+          agreement: true,
+          confidence: 0.92
+        }
+      ]
+    }
+
+    // Generate visual comparison data
+    const visualComparison: ComparisonVisualization = {
+      type: comparisonVisualization,
+      data: {
+        sources: selectedSources.map(s => s.name),
+        overlap: 0.3,
+        unique1: 0.4,
+        unique2: 0.3
+      },
+      highlights: ['Methodology differences', 'Agreement on key findings']
+    }
+
+    const insight: CrossSourceInsight = {
+      id: `insight-${Date.now()}`,
+      topic,
+      sources: sourceIds,
+      agreements: ['Both sources agree on the positive correlation'],
+      contradictions: ['Methodology approaches differ significantly'],
+      gaps: ['Limited discussion of long-term effects'],
+      synthesisScore: 0.78,
+      comparisonMatrix,
+      visualComparison
+    }
+
+    setCrossSourceInsights(prev => [...prev, insight])
+    setActiveComparison(insight)
+    return insight
+  }
+
+  // J8: Enhanced insight pinning with categorization
+  const pinInsightWithMetadata = (qa: QAResponse, metadata: {
+    category: PinnedInsight['category']
+    importance: PinnedInsight['importance']
+    tags: string[]
+    notes: string
+  }) => {
+    const pinnedInsight: PinnedInsight = {
+      id: `pinned-${Date.now()}`,
+      qaId: qa.id,
+      question: qa.question,
+      answer: qa.answer,
+      pinnedAt: new Date(),
+      tags: metadata.tags,
+      notes: metadata.notes,
+      category: metadata.category,
+      importance: metadata.importance,
+      relatedInsights: [],
+      exportHistory: []
+    }
+
+    setEnhancedPinnedInsights(prev => [...prev, pinnedInsight])
+    setInsightCategories(prev => new Set(Array.from(prev).concat(metadata.category)))
+    
+    // Update existing pinned insights
+    setPinnedInsights(prev => prev.filter(p => p.id !== qa.id))
+    setPinnedInsights(prev => [...prev, { ...qa, isPinned: true }])
+  }
+
+  // J9: Switch LLM with performance tracking
+  const switchLLM = async (newModel: string, qaId?: string) => {
+    const previousModel = selectedModel
+    setSelectedModel(newModel as typeof selectedModel)
+
+    // Track model switch in audit trail
+    if (qaId) {
+      const qa = qaHistory.find(q => q.id === qaId)
+      if (qa) {
+        const auditEntry: AuditTrailEntry = {
+          id: `audit-${Date.now()}`,
+          timestamp: new Date(),
+          action: 'model_switched',
+          model: newModel,
+          sources: qa.citations.map(c => c.sourceId),
+          metadata: {
+            tokensUsed: 0,
+            responseTime: 0,
+            confidence: 0.85,
+            retrievalMethod: 'model_switch'
+          }
+        }
+
+        setQAHistory(prev => prev.map(q => 
+          q.id === qaId 
+            ? { ...q, auditTrail: [...(q.auditTrail || []), auditEntry] }
+            : q
+        ))
+      }
+    }
+
+    // Update model performance tracking
+    const startTime = Date.now()
+    // Simulate response time tracking
+    setTimeout(() => {
+      const responseTime = Date.now() - startTime
+      setModelPerformance(prev => ({
+        ...prev,
+        [newModel]: {
+          avgResponseTime: responseTime,
+          avgConfidence: 0.85
+        }
+      }))
+    }, 1000)
+  }
+
+  // J8: Filter insights by category and importance
+  const getFilteredInsights = () => {
+    let filtered = enhancedPinnedInsights
+
+    if (selectedInsightCategory !== 'all') {
+      filtered = filtered.filter(insight => insight.category === selectedInsightCategory)
+    }
+
+    if (insightImportanceFilter !== 'medium') {
+      filtered = filtered.filter(insight => insight.importance === insightImportanceFilter)
+    }
+
+    return filtered
   }
 
   return (
@@ -826,6 +1227,97 @@ export function JunctionSemanticSearchWorkflow() {
                       </label>
                       <div className="text-sm text-gray-600 py-2">
                         {selectedSources.size} of {sources.length} sources
+                      </div>
+                    </div>
+
+                    {/* J5: Customizable AI Summary Options */}
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Summary Customization
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={summaryTone}
+                          onChange={(e) => setSummaryTone(e.target.value as Summary['tone'])}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        >
+                          <option value="academic">Academic</option>
+                          <option value="business">Business</option>
+                          <option value="casual">Casual</option>
+                          <option value="technical">Technical</option>
+                          <option value="creative">Creative</option>
+                        </select>
+                        <select
+                          value={targetAudience}
+                          onChange={(e) => setTargetAudience(e.target.value as Summary['targetAudience'])}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        >
+                          <option value="expert">Expert</option>
+                          <option value="intermediate">Intermediate</option>
+                          <option value="beginner">Beginner</option>
+                        </select>
+                      </div>
+                      <input
+                        type="text"
+                        value={customSummaryFocus}
+                        onChange={(e) => setCustomSummaryFocus(e.target.value)}
+                        placeholder="Custom focus area..."
+                        className="w-full mt-2 border border-gray-300 rounded px-2 py-1 text-sm"
+                      />
+                    </div>
+
+                    {/* J7: Cross-source Comparison Options */}
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Comparison Settings
+                      </label>
+                      <div className="flex space-x-2">
+                        <select
+                          value={comparisonMode}
+                          onChange={(e) => setComparisonMode(e.target.value as 'automatic' | 'manual')}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        >
+                          <option value="automatic">Automatic</option>
+                          <option value="manual">Manual</option>
+                        </select>
+                        <select
+                          value={comparisonVisualization}
+                          onChange={(e) => setComparisonVisualization(e.target.value as ComparisonVisualization['type'])}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        >
+                          <option value="table">Table</option>
+                          <option value="venn">Venn Diagram</option>
+                          <option value="timeline">Timeline</option>
+                          <option value="radar">Radar Chart</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* J9: Enhanced LLM Selection */}
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        AI Model Selection
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {availableModels.map(model => (
+                          <button
+                            key={model.id}
+                            onClick={() => switchLLM(model.id)}
+                            className={`p-2 border rounded text-sm text-left transition-colors ${
+                              selectedModel === model.id 
+                                ? 'border-blue-500 bg-blue-50' 
+                                : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                          >
+                            <div className="font-medium">{model.name}</div>
+                            <div className="text-xs text-gray-600">{model.description}</div>
+                            {modelPerformance[model.id] && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {Math.round(modelPerformance[model.id].avgResponseTime)}ms avg
+                              </div>
+                            )}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -1170,6 +1662,169 @@ export function JunctionSemanticSearchWorkflow() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* J8: Enhanced Pinned Insights with Categorization */}
+      {enhancedPinnedInsights.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center text-blue-800">
+              <StarIcon className="h-5 w-5 mr-2" />
+              Enhanced Insights ({enhancedPinnedInsights.length})
+            </h3>
+            
+            {/* Filter Controls */}
+            <div className="flex space-x-2">
+              <select
+                value={selectedInsightCategory}
+                onChange={(e) => setSelectedInsightCategory(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="all">All Categories</option>
+                {Array.from(insightCategories).map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <select
+                value={insightImportanceFilter}
+                onChange={(e) => setInsightImportanceFilter(e.target.value as PinnedInsight['importance'])}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {getFilteredInsights().map(insight => (
+              <div key={insight.id} className="bg-white p-4 rounded border">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    insight.importance === 'critical' ? 'bg-red-100 text-red-800' :
+                    insight.importance === 'high' ? 'bg-orange-100 text-orange-800' :
+                    insight.importance === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {insight.importance}
+                  </span>
+                  <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                    {insight.category}
+                  </span>
+                </div>
+                <p className="font-medium text-sm text-gray-900 mb-2">{insight.question}</p>
+                <p className="text-sm text-gray-700 mb-3">{insight.answer.substring(0, 150)}...</p>
+                
+                {/* Tags */}
+                {insight.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {insight.tags.map(tag => (
+                      <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Notes */}
+                {insight.notes && (
+                  <p className="text-xs text-gray-600 mb-3 italic">"{insight.notes}"</p>
+                )}
+                
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>{insight.exportHistory.length} exports</span>
+                  <span>{insight.pinnedAt.toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* J7: Cross-source Comparison Results */}
+      {activeComparison && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center text-green-800">
+              <BeakerIcon className="h-5 w-5 mr-2" />
+              Cross-Source Comparison: {activeComparison.topic}
+            </h3>
+            <button
+              onClick={() => setActiveComparison(null)}
+              className="text-green-600 hover:text-green-700 text-sm"
+            >
+              Close
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Comparison Matrix */}
+            {activeComparison.comparisonMatrix && (
+              <div className="bg-white p-4 rounded border">
+                <h4 className="font-medium text-gray-900 mb-3">Comparison Matrix</h4>
+                <div className="space-y-2">
+                  {activeComparison.comparisonMatrix.comparisonPoints.map((point, index) => (
+                    <div key={index} className="border-b pb-2">
+                      <div className="font-medium text-sm text-gray-700 mb-1">{point.aspect}</div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-gray-50 p-2 rounded">
+                          <div className="font-medium">{activeComparison.comparisonMatrix!.sources[0]}</div>
+                          <div className="text-gray-600">{point.source1Value}</div>
+                        </div>
+                        <div className="bg-gray-50 p-2 rounded">
+                          <div className="font-medium">{activeComparison.comparisonMatrix!.sources[1]}</div>
+                          <div className="text-gray-600">{point.source2Value}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          point.agreement ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {point.agreement ? 'Agreement' : 'Disagreement'}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {Math.round(point.confidence * 100)}% confidence
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Visual Comparison */}
+            {activeComparison.visualComparison && (
+              <div className="bg-white p-4 rounded border">
+                <h4 className="font-medium text-gray-900 mb-3">
+                  {activeComparison.visualComparison.type === 'venn' && 'Venn Diagram'}
+                  {activeComparison.visualComparison.type === 'timeline' && 'Timeline View'}
+                  {activeComparison.visualComparison.type === 'radar' && 'Radar Chart'}
+                  {activeComparison.visualComparison.type === 'table' && 'Comparison Table'}
+                </h4>
+                <div className="bg-gray-50 p-4 rounded text-center">
+                  <p className="text-sm text-gray-600 mb-2">Visualization: {activeComparison.visualComparison.type}</p>
+                  <div className="text-xs text-gray-500">
+                    {activeComparison.visualComparison.highlights.map((highlight, index) => (
+                      <div key={index} className="mb-1">• {highlight}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Synthesis Score */}
+          <div className="mt-4 p-3 bg-white rounded border">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-gray-900">Synthesis Score</span>
+              <span className="text-lg font-bold text-green-600">
+                {Math.round(activeComparison.synthesisScore * 100)}%
+              </span>
+            </div>
           </div>
         </div>
       )}

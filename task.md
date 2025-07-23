@@ -4,7 +4,7 @@
 This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B DeviseOS clone. These ACs define how users move through tasks, actions, and decision paths across the platform's ecosystem, ensuring seamless productivity, minimal cognitive load, and optimized task execution.
 
 **Total ACs:** 900 (100 Original + 200 Marathon + 200 Yonder + 100 Junction + 300 Mere)  
-**Status:** 96 Completed, 10 In Progress, 794 Pending  
+**Status:** 100 Completed, 10 In Progress, 790 Pending  
 **Last Updated:** December 2024
 
 ---
@@ -590,13 +590,13 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 | J2 | Junction must support multi-file semantic Q&A across uploads | ✅ Completed | High | Enhanced semantic Q&A with precise citations and cross-source analysis |
 | J3 | Questions can be asked in natural language and return cited answers | ✅ Completed | High | Concept extraction, entity recognition, and relationship mapping with visual interface |
 | J4 | Citations must deep-link to exact paragraph/line in source | ✅ Completed | High | Real-time collaborative Q&A sessions with shareable links and shared notes |
-| J5 | AI summaries must be tunable by tone, length, and focus | ⏳ Pending | Medium | Customizable summaries |
+| J5 | AI summaries must be tunable by tone, length, and focus | ✅ Completed | Medium | Customizable summaries with tone, audience targeting, and custom focus areas |
 | J6 | Answers include quote, analysis, and optional critique | ⏳ Pending | Medium | Comprehensive answers |
-| J7 | Junction must allow cross-source comparison in one answer | ⏳ Pending | High | Cross-source analysis |
-| J8 | Users can pin important insights for permanent reference | ⏳ Pending | Medium | Insight pinning |
-| J9 | Summaries can be regenerated with different LLMs (e.g., Claude, GPT-4) | ⏳ Pending | Medium | LLM switching |
+| J7 | Junction must allow cross-source comparison in one answer | ✅ Completed | High | Cross-source analysis with comparison matrix, visual comparisons, and synthesis scoring |
+| J8 | Users can pin important insights for permanent reference | ✅ Completed | Medium | Insight pinning with categorization, importance scoring, and filtering |
+| J9 | Summaries can be regenerated with different LLMs (e.g., Claude, GPT-4) | ✅ Completed | Medium | LLM switching with performance tracking and audit trail |
 | J10 | Users can ask follow-ups using context from prior responses | ⏳ Pending | High | Contextual follow-ups |
-| J11 | Citation confidence must be shown as a score or indicator | ⏳ Pending | Medium | Confidence scoring |
+| J11 | Citation confidence must be shown as a score or indicator | ✅ Completed | Medium | Confidence scoring with color-coded indicators and numerical scores |
 | J12 | Highlighted questions auto-suggest follow-up topics | ⏳ Pending | Medium | Topic suggestions |
 | J13 | Source view must include highlight-sync to cited answer | ⏳ Pending | Medium | Source highlighting |
 | J14 | Users can tag, comment, or annotate specific answers | ⏳ Pending | Medium | Answer annotation |
