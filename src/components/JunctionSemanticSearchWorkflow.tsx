@@ -28,6 +28,18 @@ interface KnowledgeSource {
   extractedConcepts?: ExtractedConcept[] // J3: Concept extraction
   entities?: ExtractedEntity[] // J3: Entity recognition
   relationships?: ConceptRelationship[] // J3: Relationship mapping
+  privacyLevel: 'public' | 'private' | 'shared' | 'confidential' // J21: Privacy compliance
+  accessControl: {
+    owner: string
+    allowedUsers: string[]
+    restrictedUsers: string[]
+    permissions: 'read' | 'write' | 'admin'
+  } // J21: Access control
+  dataRetention?: {
+    expiresAt?: Date
+    autoArchive: boolean
+    retentionPolicy: string
+  } // J21: Data retention
 }
 
 interface ExtractedConcept {
@@ -178,6 +190,55 @@ interface ExportRecord {
   format: string
   destination: string
   content: string
+}
+
+// J16: Cross-platform search interfaces
+interface SearchScope {
+  id: string
+  name: string
+  type: 'sources' | 'notes' | 'pinned' | 'memory' | 'all'
+  enabled: boolean
+  filters?: {
+    dateRange?: { start: Date; end: Date }
+    privacyLevel?: KnowledgeSource['privacyLevel']
+    tags?: string[]
+    authors?: string[]
+  }
+}
+
+interface SearchResult {
+  id: string
+  type: 'source' | 'note' | 'pinned' | 'memory'
+  title: string
+  content: string
+  relevance: number
+  sourceId?: string
+  timestamp: Date
+  privacyLevel?: KnowledgeSource['privacyLevel']
+  accessLevel: 'read' | 'write' | 'admin'
+}
+
+// J21: Privacy compliance interfaces
+interface PrivacySettings {
+  defaultPrivacyLevel: KnowledgeSource['privacyLevel']
+  autoArchiveEnabled: boolean
+  retentionPeriod: number // days
+  dataEncryption: boolean
+  auditLogging: boolean
+  complianceMode: 'gdpr' | 'ccpa' | 'hipaa' | 'none'
+}
+
+interface AccessLog {
+  id: string
+  userId: string
+  action: 'view' | 'edit' | 'share' | 'delete'
+  resourceId: string
+  resourceType: string
+  timestamp: Date
+  ipAddress?: string
+  userAgent?: string
+  success: boolean
+  reason?: string
 }
 
 // J26: Block system interfaces for Notion-style editing
@@ -334,6 +395,34 @@ export function JunctionSemanticSearchWorkflow() {
   ])
   const [modelPerformance, setModelPerformance] = useState<Record<string, { avgResponseTime: number, avgConfidence: number }>>({})
 
+  // J16: Cross-platform search state
+  const [searchScopes, setSearchScopes] = useState<SearchScope[]>([
+    { id: 'sources', name: 'Knowledge Sources', type: 'sources', enabled: true },
+    { id: 'notes', name: 'Notes & Annotations', type: 'notes', enabled: true },
+    { id: 'pinned', name: 'Pinned Insights', type: 'pinned', enabled: true },
+    { id: 'memory', name: 'Memory Objects', type: 'memory', enabled: false },
+    { id: 'all', name: 'All Content', type: 'all', enabled: true }
+  ])
+  const [crossPlatformResults, setCrossPlatformResults] = useState<SearchResult[]>([])
+  const [searchFilters, setSearchFilters] = useState({
+    dateRange: null as { start: Date; end: Date } | null,
+    privacyLevel: null as KnowledgeSource['privacyLevel'] | null,
+    tags: [] as string[],
+    authors: [] as string[]
+  })
+
+  // J21: Privacy compliance state
+  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>({
+    defaultPrivacyLevel: 'private',
+    autoArchiveEnabled: true,
+    retentionPeriod: 365,
+    dataEncryption: true,
+    auditLogging: true,
+    complianceMode: 'gdpr'
+  })
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([])
+  const [showPrivacyPanel, setShowPrivacyPanel] = useState(false)
+
   // J3: Mock concept extraction for demo
   const extractConceptsFromSource = useCallback((source: KnowledgeSource): ExtractedConcept[] => {
     // Simulate concept extraction
@@ -471,7 +560,14 @@ export function JunctionSemanticSearchWorkflow() {
         uploadedAt: new Date(),
         pages: file.type === 'application/pdf' ? Math.ceil(file.size / 50000) : undefined,
         size: file.size,
-        processingStatus: 'uploading'
+        processingStatus: 'uploading',
+        privacyLevel: 'private',
+        accessControl: {
+          owner: 'current-user',
+          allowedUsers: [],
+          restrictedUsers: [],
+          permissions: 'admin'
+        }
       }
       
       setSources(prev => [...prev, newSource])
@@ -559,7 +655,14 @@ export function JunctionSemanticSearchWorkflow() {
         uploadedAt: new Date(Date.now() - 86400000),
         pages: 15,
         size: 2.4 * 1024 * 1024,
-        processingStatus: 'indexed'
+        processingStatus: 'indexed',
+        privacyLevel: 'public',
+        accessControl: {
+          owner: 'current-user',
+          allowedUsers: [],
+          restrictedUsers: [],
+          permissions: 'admin'
+        }
       },
       {
         id: 'source-2', 
@@ -568,7 +671,14 @@ export function JunctionSemanticSearchWorkflow() {
         content: 'Deep learning models require large amounts of training data...',
         uploadedAt: new Date(Date.now() - 172800000),
         size: 856 * 1024,
-        processingStatus: 'indexed'
+        processingStatus: 'indexed',
+        privacyLevel: 'private',
+        accessControl: {
+          owner: 'current-user',
+          allowedUsers: [],
+          restrictedUsers: [],
+          permissions: 'admin'
+        }
       },
       {
         id: 'source-3',
@@ -577,7 +687,14 @@ export function JunctionSemanticSearchWorkflow() {
         content: 'Current trends in artificial intelligence show exponential growth...',
         uploadedAt: new Date(Date.now() - 259200000),
         size: 124 * 1024,
-        processingStatus: 'indexed'
+        processingStatus: 'indexed',
+        privacyLevel: 'shared',
+        accessControl: {
+          owner: 'current-user',
+          allowedUsers: ['user-2', 'user-3'],
+          restrictedUsers: [],
+          permissions: 'read'
+        }
       }
     ]
     setSources(mockSources)
@@ -1045,6 +1162,129 @@ export function JunctionSemanticSearchWorkflow() {
     return filtered
   }
 
+  // J16: Cross-platform search function
+  const performCrossPlatformSearch = async (query: string) => {
+    if (!query.trim()) return
+
+    setIsProcessing(true)
+    
+    // Simulate search across different platforms
+    setTimeout(() => {
+      const enabledScopes = searchScopes.filter(scope => scope.enabled)
+      const results: SearchResult[] = []
+
+      // Search in sources
+      if (enabledScopes.some(s => s.type === 'sources' || s.type === 'all')) {
+        sources.forEach(source => {
+          if (source.content.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              id: `source-${source.id}`,
+              type: 'source',
+              title: source.name,
+              content: source.content.substring(0, 200) + '...',
+              relevance: 0.8,
+              sourceId: source.id,
+              timestamp: source.uploadedAt,
+              privacyLevel: source.privacyLevel,
+              accessLevel: source.accessControl.permissions
+            })
+          }
+        })
+      }
+
+      // Search in pinned insights
+      if (enabledScopes.some(s => s.type === 'pinned' || s.type === 'all')) {
+        enhancedPinnedInsights.forEach(insight => {
+          if (insight.question.toLowerCase().includes(query.toLowerCase()) || 
+              insight.answer.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              id: `pinned-${insight.id}`,
+              type: 'pinned',
+              title: insight.question,
+              content: insight.answer.substring(0, 200) + '...',
+              relevance: 0.9,
+              timestamp: insight.pinnedAt,
+              accessLevel: 'read'
+            })
+          }
+        })
+      }
+
+      // Apply filters
+      let filteredResults = results
+      if (searchFilters.privacyLevel) {
+        filteredResults = filteredResults.filter(r => r.privacyLevel === searchFilters.privacyLevel)
+      }
+      if (searchFilters.dateRange) {
+        filteredResults = filteredResults.filter(r => 
+          r.timestamp >= searchFilters.dateRange!.start && r.timestamp <= searchFilters.dateRange!.end
+        )
+      }
+
+      // Sort by relevance
+      filteredResults.sort((a, b) => b.relevance - a.relevance)
+      
+      setCrossPlatformResults(filteredResults)
+      setIsProcessing(false)
+    }, 1000)
+  }
+
+  // J21: Privacy compliance functions
+  const logAccess = (action: AccessLog['action'], resourceId: string, resourceType: string, success: boolean, reason?: string) => {
+    if (!privacySettings.auditLogging) return
+
+    const logEntry: AccessLog = {
+      id: `log-${Date.now()}`,
+      userId: 'current-user',
+      action,
+      resourceId,
+      resourceType,
+      timestamp: new Date(),
+      ipAddress: '127.0.0.1', // Mock IP
+      userAgent: navigator.userAgent,
+      success,
+      reason
+    }
+
+    setAccessLogs(prev => [logEntry, ...prev.slice(0, 99)]) // Keep last 100 logs
+  }
+
+  const checkPrivacyAccess = (source: KnowledgeSource, action: 'view' | 'edit' | 'share' | 'delete'): boolean => {
+    // Check if user has permission
+    const userPermissions = source.accessControl.permissions
+    const isOwner = source.accessControl.owner === 'current-user'
+    const isAllowed = source.accessControl.allowedUsers.includes('current-user')
+    const isRestricted = source.accessControl.restrictedUsers.includes('current-user')
+
+    if (isRestricted) return false
+    if (isOwner) return true
+    if (isAllowed && userPermissions !== 'read') return true
+    if (action === 'view' && userPermissions === 'read') return true
+
+    return false
+  }
+
+  const updatePrivacySettings = (newSettings: Partial<PrivacySettings>) => {
+    setPrivacySettings(prev => ({ ...prev, ...newSettings }))
+    
+    // Log the change
+    logAccess('edit', 'privacy-settings', 'settings', true, 'Privacy settings updated')
+  }
+
+  const autoArchiveExpiredContent = () => {
+    if (!privacySettings.autoArchiveEnabled) return
+
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - privacySettings.retentionPeriod)
+
+    sources.forEach(source => {
+      if (source.uploadedAt < cutoffDate) {
+        // Mark for archiving
+        logAccess('delete', source.id, 'source', true, 'Auto-archived due to retention policy')
+      }
+    })
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -1136,6 +1376,170 @@ export function JunctionSemanticSearchWorkflow() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* J21: Privacy Compliance Panel */}
+            <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-red-800 flex items-center">
+                  <ClipboardDocumentCheckIcon className="h-4 w-4 mr-2" />
+                  Privacy & Compliance
+                </h4>
+                <button
+                  onClick={() => setShowPrivacyPanel(!showPrivacyPanel)}
+                  className="text-xs text-red-600 hover:text-red-700"
+                >
+                  {showPrivacyPanel ? 'Hide' : 'Show'} Settings
+                </button>
+              </div>
+
+              {/* Privacy Status Summary */}
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-red-700">Default Privacy:</span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    privacySettings.defaultPrivacyLevel === 'public' ? 'bg-green-100 text-green-700' :
+                    privacySettings.defaultPrivacyLevel === 'private' ? 'bg-red-100 text-red-700' :
+                    privacySettings.defaultPrivacyLevel === 'shared' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {privacySettings.defaultPrivacyLevel}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-red-700">Compliance:</span>
+                  <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">
+                    {privacySettings.complianceMode.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-red-700">Audit Logging:</span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    privacySettings.auditLogging ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {privacySettings.auditLogging ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-red-700">Encryption:</span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    privacySettings.dataEncryption ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {privacySettings.dataEncryption ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Privacy Settings Panel */}
+              {showPrivacyPanel && (
+                <div className="mt-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-red-700 mb-1">Default Privacy Level</label>
+                      <select
+                        value={privacySettings.defaultPrivacyLevel}
+                        onChange={(e) => updatePrivacySettings({ 
+                          defaultPrivacyLevel: e.target.value as KnowledgeSource['privacyLevel'] 
+                        })}
+                        className="w-full px-2 py-1 border border-red-300 rounded text-xs"
+                      >
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                        <option value="shared">Shared</option>
+                        <option value="confidential">Confidential</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-red-700 mb-1">Compliance Mode</label>
+                      <select
+                        value={privacySettings.complianceMode}
+                        onChange={(e) => updatePrivacySettings({ 
+                          complianceMode: e.target.value as PrivacySettings['complianceMode'] 
+                        })}
+                        className="w-full px-2 py-1 border border-red-300 rounded text-xs"
+                      >
+                        <option value="none">None</option>
+                        <option value="gdpr">GDPR</option>
+                        <option value="ccpa">CCPA</option>
+                        <option value="hipaa">HIPAA</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-red-700 mb-1">Retention Period (days)</label>
+                      <input
+                        type="number"
+                        value={privacySettings.retentionPeriod}
+                        onChange={(e) => updatePrivacySettings({ 
+                          retentionPeriod: parseInt(e.target.value) 
+                        })}
+                        className="w-full px-2 py-1 border border-red-300 rounded text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={privacySettings.autoArchiveEnabled}
+                        onChange={(e) => updatePrivacySettings({ 
+                          autoArchiveEnabled: e.target.checked 
+                        })}
+                        className="rounded border-red-300 text-red-600 focus:ring-red-500"
+                      />
+                      <label className="text-xs text-red-700">Auto-archive expired content</label>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={privacySettings.auditLogging}
+                        onChange={(e) => updatePrivacySettings({ 
+                          auditLogging: e.target.checked 
+                        })}
+                        className="rounded border-red-300 text-red-600 focus:ring-red-500"
+                      />
+                      <label className="text-xs text-red-700">Enable audit logging</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={privacySettings.dataEncryption}
+                        onChange={(e) => updatePrivacySettings({ 
+                          dataEncryption: e.target.checked 
+                        })}
+                        className="rounded border-red-300 text-red-600 focus:ring-red-500"
+                      />
+                      <label className="text-xs text-red-700">Data encryption</label>
+                    </div>
+                  </div>
+
+                  {/* Access Logs */}
+                  {accessLogs.length > 0 && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-red-700 hover:text-red-800">Recent Access Logs ({accessLogs.length})</summary>
+                      <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                        {accessLogs.slice(0, 5).map((log) => (
+                          <div key={log.id} className="p-2 bg-white rounded border text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className={`px-1 py-0.5 rounded ${
+                                log.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                              }`}>
+                                {log.action}
+                              </span>
+                              <span className="text-gray-500">{log.timestamp.toLocaleTimeString()}</span>
+                            </div>
+                            <p className="text-gray-600 mt-1">{log.resourceType}: {log.resourceId}</p>
+                            {log.reason && <p className="text-gray-500 italic">{log.reason}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1383,6 +1787,113 @@ export function JunctionSemanticSearchWorkflow() {
                           <p className="text-xs text-gray-500 mt-1">
                             {result.sourceName} • Page {result.pageNumber} • {Math.round(result.confidence * 100)}% match
                           </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* J16: Cross-platform Search */}
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-800 mb-3 flex items-center">
+                    <MagnifyingGlassIcon className="h-4 w-4 mr-2" />
+                    Cross-Platform Search
+                  </h4>
+                  
+                  {/* Search Scopes */}
+                  <div className="mb-3">
+                    <p className="text-xs text-blue-700 mb-2">Search Scope:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {searchScopes.map(scope => (
+                        <label key={scope.id} className="flex items-center space-x-1">
+                          <input
+                            type="checkbox"
+                            checked={scope.enabled}
+                            onChange={(e) => setSearchScopes(prev => 
+                              prev.map(s => s.id === scope.id ? { ...s, enabled: e.target.checked } : s)
+                            )}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-xs text-blue-700">{scope.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="flex space-x-3 mb-3">
+                    <input
+                      type="text"
+                      placeholder="Search across sources, notes, pinned insights..."
+                      className="flex-1 px-3 py-2 border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      onKeyPress={(e) => e.key === 'Enter' && performCrossPlatformSearch(e.currentTarget.value)}
+                    />
+                    <button
+                      onClick={() => performCrossPlatformSearch(searchQuery)}
+                      disabled={!searchQuery.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    >
+                      Search
+                    </button>
+                  </div>
+
+                  {/* Search Filters */}
+                  <div className="mb-3">
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-blue-700 hover:text-blue-800">Advanced Filters</summary>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex space-x-2">
+                          <select
+                            value={searchFilters.privacyLevel || ''}
+                            onChange={(e) => setSearchFilters(prev => ({ 
+                              ...prev, 
+                              privacyLevel: e.target.value as KnowledgeSource['privacyLevel'] || null 
+                            }))}
+                            className="px-2 py-1 border border-blue-300 rounded text-xs"
+                          >
+                            <option value="">All Privacy Levels</option>
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                            <option value="shared">Shared</option>
+                            <option value="confidential">Confidential</option>
+                          </select>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+
+                  {/* Cross-platform Results */}
+                  {crossPlatformResults.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-sm font-medium text-blue-800">Cross-Platform Results ({crossPlatformResults.length})</p>
+                      {crossPlatformResults.slice(0, 5).map((result) => (
+                        <div key={result.id} className="p-3 bg-white rounded border border-blue-200 text-sm">
+                          <div className="flex items-center justify-between mb-1">
+                            <h5 className="font-medium text-gray-900">{result.title}</h5>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              result.type === 'source' ? 'bg-blue-100 text-blue-800' :
+                              result.type === 'pinned' ? 'bg-green-100 text-green-800' :
+                              result.type === 'note' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {result.type}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 mb-2">{result.content}</p>
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>Relevance: {Math.round(result.relevance * 100)}%</span>
+                            <span>{result.timestamp.toLocaleDateString()}</span>
+                            {result.privacyLevel && (
+                              <span className={`px-1 py-0.5 rounded text-xs ${
+                                result.privacyLevel === 'public' ? 'bg-green-100 text-green-700' :
+                                result.privacyLevel === 'private' ? 'bg-red-100 text-red-700' :
+                                result.privacyLevel === 'shared' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {result.privacyLevel}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

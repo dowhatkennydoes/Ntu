@@ -4,7 +4,7 @@
 This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B DeviseOS clone. These ACs define how users move through tasks, actions, and decision paths across the platform's ecosystem, ensuring seamless productivity, minimal cognitive load, and optimized task execution.
 
 **Total ACs:** 900 (100 Original + 200 Marathon + 200 Yonder + 100 Junction + 300 Mere)  
-**Status:** 100 Completed, 10 In Progress, 790 Pending  
+**Status:** 102 Completed, 10 In Progress, 788 Pending  
 **Last Updated:** December 2024
 
 ---
@@ -601,12 +601,12 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 | J13 | Source view must include highlight-sync to cited answer | ⏳ Pending | Medium | Source highlighting |
 | J14 | Users can tag, comment, or annotate specific answers | ⏳ Pending | Medium | Answer annotation |
 | J15 | Answers can be dragged into Notebooks or Notes | ⏳ Pending | Medium | Drag integration |
-| J16 | Search must span across sources, notes, and pinned answers | ⏳ Pending | High | Cross-platform search |
+| J16 | Search must span across sources, notes, and pinned answers | ✅ Completed | High | Cross-platform search with scope selection, filters, and relevance scoring |
 | J17 | Autocomplete must suggest entities from memory and uploads | ⏳ Pending | Medium | Entity suggestions |
 | J18 | Q&A supports toggling between extractive and generative styles | ⏳ Pending | Medium | Style switching |
 | J19 | AI can extract stats, metrics, and structured lists from documents | ⏳ Pending | Medium | Data extraction |
 | J20 | Answers can be exported as flashcards or summaries | ⏳ Pending | Medium | Export formats |
-| J21 | LLMs must respect memory permissions and private layers | ⏳ Pending | High | Privacy compliance |
+| J21 | LLMs must respect memory permissions and private layers | ✅ Completed | High | Privacy compliance with access control, audit logging, and compliance modes |
 | J22 | Junction suggests related questions when reading a document | ⏳ Pending | Medium | Question suggestions |
 | J23 | AI-generated Q&A can be "forked" into user commentary | ⏳ Pending | Medium | Q&A forking |
 | J24 | Each response shows what sources were not used (transparency) | ⏳ Pending | Medium | Source transparency |
