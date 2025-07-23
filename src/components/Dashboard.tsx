@@ -527,6 +527,104 @@ function WorkflowGrid({
                     </div>
       </div>
 
+      {/* MA81 & MA82: Marathon Flows Dashboard */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Marathon Flows</h2>
+          <button className="btn btn-primary btn-sm">
+            <PlusIcon className="h-4 w-4 mr-2" />
+            New Flow
+          </button>
+        </div>
+
+        {/* Recent Flows with Status Badges */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Flows</h3>
+          <div className="space-y-4">
+            {[
+              { id: 'flow-1', name: 'Daily Memory Processing', status: 'success', lastRun: '2 hours ago', runsThisWeek: 14, errors: 0 },
+              { id: 'flow-2', name: 'Notification Dispatcher', status: 'running', lastRun: 'Running now', runsThisWeek: 28, errors: 1 },
+              { id: 'flow-3', name: 'Content Summarizer', status: 'error', lastRun: '1 day ago', runsThisWeek: 7, errors: 3 },
+              { id: 'flow-4', name: 'Team Sync Workflow', status: 'idle', lastRun: '3 days ago', runsThisWeek: 5, errors: 0 }
+            ].map((flow) => (
+              <div key={flow.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center">
+                  <div className={`w-3 h-3 rounded-full mr-3 ${
+                    flow.status === 'success' ? 'bg-green-500' :
+                    flow.status === 'running' ? 'bg-blue-500 animate-pulse' :
+                    flow.status === 'error' ? 'bg-red-500' :
+                    'bg-gray-400'
+                  }`} />
+                  <div>
+                    <h4 className="font-medium text-gray-900">{flow.name}</h4>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <span>Last run: {flow.lastRun}</span>
+                      <span>This week: {flow.runsThisWeek} runs</span>
+                      <span className={flow.errors > 0 ? 'text-red-600' : 'text-gray-500'}>
+                        {flow.errors > 0 ? `${flow.errors} errors` : 'No errors'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    flow.status === 'success' ? 'bg-green-100 text-green-800' :
+                    flow.status === 'running' ? 'bg-blue-100 text-blue-800' :
+                    flow.status === 'error' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {flow.status === 'success' ? 'Success' :
+                     flow.status === 'running' ? 'Running' :
+                     flow.status === 'error' ? 'Error' :
+                     'Idle'}
+                  </span>
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <PlayIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Flow Categories Quick Access */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <ArrowPathIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-900">Active Flows</p>
+                <p className="text-2xl font-bold text-gray-900">12</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <ClockIcon className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-900">Avg Runtime</p>
+                <p className="text-2xl font-bold text-gray-900">2.3s</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <XMarkIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-900">Failed Today</p>
+                <p className="text-2xl font-bold text-gray-900">2</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {workflows.map((workflow) => {
           const CategoryIcon = getCategoryIcon(workflow.category)

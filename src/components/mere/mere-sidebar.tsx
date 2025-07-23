@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { AppList } from './app-list'
@@ -9,9 +10,10 @@ import { SessionList } from './session-list'
 interface MereSidebarProps {
   onViewChange?: (view: 'dashboard' | 'chat') => void
   currentView?: 'dashboard' | 'chat'
+  appName?: string
 }
 
-export function MereSidebar({ onViewChange, currentView }: MereSidebarProps) {
+export function MereSidebar({ onViewChange, currentView, appName }: MereSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
@@ -31,6 +33,16 @@ export function MereSidebar({ onViewChange, currentView }: MereSidebarProps) {
           <ChevronLeftIcon className="h-4 w-4" />
         )}
       </button>
+
+      {/* NTU Logo at top */}
+      <div className="p-4 border-b">
+        <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+          <img src="/logo.png" alt="App Logo" width={40} height={40} className="rounded-lg flex-shrink-0" />
+          {!isCollapsed && (
+            <span className="font-semibold text-xl">NTU</span>
+          )}
+        </Link>
+      </div>
 
       {/* Content */}
       <div className="flex-1 space-y-4 overflow-auto p-4">
@@ -59,7 +71,7 @@ export function MereSidebar({ onViewChange, currentView }: MereSidebarProps) {
           </div>
         )}
         <AppList isCollapsed={isCollapsed} />
-        <SessionList isCollapsed={isCollapsed} />
+        {appName === 'Mere' && <SessionList isCollapsed={isCollapsed} />}
       </div>
     </motion.div>
   )

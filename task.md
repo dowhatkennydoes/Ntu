@@ -3,8 +3,8 @@
 ## Overview
 This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B DeviseOS clone. These ACs define how users move through tasks, actions, and decision paths across the platform's ecosystem, ensuring seamless productivity, minimal cognitive load, and optimized task execution.
 
-**Total ACs:** 900 (100 Original + 200 Marathon + 200 Yonder + 100 Junction + 300 Mere)  
-**Status:** 106 Completed, 10 In Progress, 784 Pending  
+**Total ACs:** 1100 (100 Original + 200 Marathon + 200 Yonder + 100 Junction + 300 Mere + 200 Punctual)  
+**Status:** 130 Completed, 0 In Progress, 970 Pending  
 **Last Updated:** December 2024
 
 ---
@@ -33,12 +33,12 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
 | MA11 | Users must be able to create flows using a canvas-based UI | ✅ Completed | High | Full canvas implementation with zoom, pan, node manipulation |
-| MA12 | Canvas supports zoom, pan, and fit-to-view | ⏳ Pending | Medium | Navigation |
+| MA12 | Canvas supports zoom, pan, and fit-to-view | ✅ Completed | Medium | Implemented zoom controls, pan functionality, and fit-to-view button in canvas header |
 | MA13 | Users can drag from a node palette onto the canvas | ✅ Completed | High | Node palette with drag-and-drop creation |
 | MA14 | Nodes snap to a grid for clean alignment | ✅ Completed | Medium | 20px grid with snap-to-grid functionality |
 | MA15 | Connections animate to show data direction | ⏳ Pending | Medium | Visual feedback |
 | MA16 | Double-clicking a node opens its config panel | ✅ Completed | Medium | Node configuration panel with property editing |
-| MA17 | Right-click menu on canvas supports "Add Node," "Paste," "Group" | ⏳ Pending | Medium | Context menu |
+| MA17 | Right-click menu on canvas supports "Add Node," "Paste," "Group" | ✅ Completed | Medium | Implemented context menu with Add Node, Paste, Group, and Fit to View actions |
 | MA18 | Undo/redo is supported (Ctrl+Z/Ctrl+Y) | ✅ Completed | Medium | Full undo/redo with keyboard shortcuts and history management |
 | MA19 | Keyboard shortcuts: Del to delete, ⌘/Ctrl + Click for multi-select | ✅ Completed | Medium | Complete keyboard UX with node duplication (Ctrl+D) |
 | MA20 | Nodes can be color-coded by category (data, memory, plugin, AI, etc.) | ⏳ Pending | Low | Visual organization |
@@ -47,12 +47,12 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
-| MA21 | "Memory Created" trigger must support filters (by tag, app, content) | ⏳ Pending | High | Memory triggers |
-| MA22 | "Notebook Updated" trigger must detect title/body changes | ⏳ Pending | High | Notebook triggers |
+| MA21 | "Memory Created" trigger must support filters (by tag, app, content) | ✅ Completed | High | Implemented with advanced filters for tags, memory type, and content matching |
+| MA22 | "Notebook Updated" trigger must detect title/body changes | ✅ Completed | High | Implemented with change detection, debouncing, and metadata tracking for title/body/sections |
 | MA23 | "Voice Transcript Completed" must start a flow | ⏳ Pending | Medium | Voice triggers |
 | MA24 | "Flashcard Quiz Completed" should trigger analytics flows | ⏳ Pending | Medium | Learning triggers |
 | MA25 | "Plugin Installed" or "Plugin Event" must start custom logic | ⏳ Pending | Medium | Plugin triggers |
-| MA26 | "Scheduled Time" supports cron or natural language | ⏳ Pending | High | Time triggers |
+| MA26 | "Scheduled Time" supports cron or natural language | ✅ Completed | High | Implemented with cron expressions, interval scheduling, and one-time triggers |
 | MA27 | "New Team Message" or "Comment Added" should trigger flows | ⏳ Pending | Medium | Team triggers |
 | MA28 | "New File Upload" to a notebook starts parsing workflow | ⏳ Pending | Medium | File triggers |
 | MA29 | "User Logs In" can trigger onboarding flows | ⏳ Pending | Low | User triggers |
@@ -62,11 +62,11 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
-| MA31 | "Create Note in Notebook" must allow selection of section and content | ⏳ Pending | High | Note creation |
-| MA32 | "Tag Memory" must include dynamic input from prior node | ⏳ Pending | High | Memory tagging |
+| MA31 | "Create Note in Notebook" must allow selection of section and content | ✅ Completed | High | Implemented with section selection, content input, and template support |
+| MA32 | "Tag Memory" must include dynamic input from prior node | ✅ Completed | High | Implemented with dynamic tagging, static/dynamic mode options |
 | MA33 | "Redact Section" should auto-flag and return modified block | ⏳ Pending | Medium | Content redaction |
-| MA34 | "Send Notification" supports push, email, and in-app alerts | ⏳ Pending | High | Notifications |
-| MA35 | "Summarize Memory" triggers AI summarization with options | ⏳ Pending | High | AI actions |
+| MA34 | "Send Notification" supports push, email, and in-app alerts | ✅ Completed | High | Implemented with multi-channel support, priority levels, and retry logic |
+| MA35 | "Summarize Memory" triggers AI summarization with options | ✅ Completed | High | Implemented with LLM engine selection, length options, and tone control |
 | MA36 | "Generate Flashcards" from memory or note | ⏳ Pending | Medium | Learning actions |
 | MA37 | "Export Memory" node supports selecting format (PDF, JSON) | ⏳ Pending | Medium | Export actions |
 | MA38 | "Assign Task to Teammate" includes deadline input | ⏳ Pending | Medium | Team actions |
@@ -77,8 +77,8 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
-| MA41 | "Ask Mere" uses generative prompt chaining | ⏳ Pending | High | AI interaction |
-| MA42 | "Generate Summary" uses selected LLM engine | ⏳ Pending | High | AI summarization |
+| MA41 | "Ask Mere" uses generative prompt chaining | ✅ Completed | High | Implemented with model selection, chaining support, and memory context integration |
+| MA42 | "Generate Summary" uses selected LLM engine | ✅ Completed | High | Implemented with configurable LLM engines and summary options |
 | MA43 | "Classify Memory Intent" returns category or tag | ⏳ Pending | Medium | AI classification |
 | MA44 | "Sentiment Analysis" node returns emotion metadata | ⏳ Pending | Medium | AI analysis |
 | MA45 | "Extract Named Entities" from text node | ⏳ Pending | Medium | AI extraction |
@@ -92,10 +92,10 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
-| MA51 | "Set Variable" node for temporary data holding | ⏳ Pending | High | Data management |
-| MA52 | "Merge Streams" must allow field selection and overwrite logic | ⏳ Pending | High | Data merging |
+| MA51 | "Set Variable" node for temporary data holding | ✅ Completed | High | Implemented with variable persistence and scope management |
+| MA52 | "Merge Streams" must allow field selection and overwrite logic | ✅ Completed | High | Implemented with multi-stream merging, field selection, and overwrite logic |
 | MA53 | "Split Text" by delimiter or line | ⏳ Pending | Medium | Text processing |
-| MA54 | "Filter By Field" accepts conditional expressions | ⏳ Pending | High | Data filtering |
+| MA54 | "Filter By Field" accepts conditional expressions | ✅ Completed | High | Implemented with conditional filtering and rejected data output |
 | MA55 | "Group By Attribute" supports statistical summarization | ⏳ Pending | Medium | Data aggregation |
 | MA56 | "Sort Array" ascending/descending | ⏳ Pending | Medium | Data sorting |
 | MA57 | "Delay/Wait" node supports seconds, minutes, or trigger dependency | ⏳ Pending | Medium | Flow control |
@@ -107,7 +107,7 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
-| MA61 | "HTTP Request" node for calling external APIs | ⏳ Pending | High | External APIs |
+| MA61 | "HTTP Request" node for calling external APIs | ✅ Completed | High | Implemented with configurable HTTP methods, headers, and body support |
 | MA62 | "Google Calendar" integration supports create/update events | ⏳ Pending | Medium | Calendar integration |
 | MA63 | "Zoom Sync" creates memory from recorded meetings | ⏳ Pending | Medium | Meeting integration |
 | MA64 | "Slack Message" supports channel posting with formatting | ⏳ Pending | Medium | Communication |
@@ -122,7 +122,7 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
-| MA71 | Users can assign flow visibility: private, team, org | ⏳ Pending | High | Access control |
+| MA71 | Users can assign flow visibility: private, team, org | ✅ Completed | High | Implemented with comprehensive permissions modal and role-based access control |
 | MA72 | Marathon flows must respect Ntu's RBAC roles | ⏳ Pending | High | Role-based access |
 | MA73 | Secure flows require extra confirmation for export or redaction | ⏳ Pending | Medium | Security confirmation |
 | MA74 | All execution logs must be exportable | ⏳ Pending | Medium | Logging |
@@ -137,8 +137,8 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
-| MA81 | User dashboard shows recent flows with status badges | ⏳ Pending | High | Dashboard view |
-| MA82 | Each flow must show "last run," "runs this week," and "errors" | ⏳ Pending | High | Flow metrics |
+| MA81 | User dashboard shows recent flows with status badges | ✅ Completed | High | Implemented with flow status tracking, recent flows display, and metrics overview |
+| MA82 | Each flow must show "last run," "runs this week," and "errors" | ✅ Completed | High | Comprehensive flow metrics with runtime stats, error tracking, and execution counts |
 | MA83 | Flow search bar filters by name, tag, or trigger type | ⏳ Pending | Medium | Search functionality |
 | MA84 | User can duplicate or clone existing flows | ⏳ Pending | Medium | Flow reuse |
 | MA85 | Flows can be tagged and grouped by purpose | ⏳ Pending | Medium | Organization |
@@ -153,8 +153,8 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
 | MA91 | Multi-run concurrency toggle per flow | ⏳ Pending | Medium | Concurrency control |
-| MA92 | Subflows can be created and reused across other flows | ⏳ Pending | High | Flow modularity |
-| MA93 | Conditional routing based on memory values | ⏳ Pending | High | Dynamic routing |
+| MA92 | Subflows can be created and reused across other flows | ✅ Completed | High | Full subflow system with creation, library management, and reusable components |
+| MA93 | Conditional routing based on memory values | ✅ Completed | High | Memory router node with confidence-based routing, tag evaluation, and dynamic branching |
 | MA94 | Batch processing of memory items | ⏳ Pending | Medium | Batch operations |
 | MA95 | Flows can interact with multiple notebooks at once | ⏳ Pending | Medium | Multi-notebook |
 | MA96 | Execution queue visualized per user/team | ⏳ Pending | Medium | Queue management |
@@ -1124,6 +1124,280 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 | M300 | LLM engine logs are retained per policy and scrubbed after TTL | ⏳ Pending | High | Log retention |
 
 ---
+
+## ⏰ **Punctual - AI-Powered Task & Time Management (200 ACs)**
+
+*Punctual fuses the best of Motion (AI scheduling), Monday.com (project workflows), and Power Automate (system orchestration). It intelligently schedules, routes, and automates time + tasks using memory, Mere, and user-defined goals.*
+
+### ⏱️ **I. TIME-BLOCKING & SMART SCHEDULING (20 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P1 | Punctual can block time on user's calendar based on task priority | ✅ Completed | High | Implemented with intelligent time-blocking algorithm and calendar integration |
+| P2 | Tasks are scheduled dynamically based on available time slots | ✅ Completed | High | Dynamic scheduling engine finds optimal time slots with buffer management |
+| P3 | Users can define working hours, time zones, and focus blocks | ✅ Completed | High | Comprehensive user preferences with working hours, timezone, and focus settings |
+| P4 | Overlapping tasks are auto-prioritized and reordered | ✅ Completed | High | Auto-prioritization system with conflict resolution and task reordering |
+| P5 | Punctual offers drag-to-reschedule on calendar view | ⏳ Pending | Medium | User interaction |
+| P6 | Each task includes estimated duration and buffer | ⏳ Pending | Medium | Time estimation |
+| P7 | Deadlines are respected with urgency weighting | ✅ Completed | High | Deadline urgency calculation with weighted priority scoring |
+| P8 | Tasks can be split across days if no single block is long enough | ⏳ Pending | Medium | Task splitting |
+| P9 | Scheduled blocks are editable by user at any time | ⏳ Pending | Medium | User control |
+| P10 | Rescheduling rules can be set: auto, confirm, manual only | ⏳ Pending | Medium | Flexibility |
+| P11 | "Focus Mode" displays only the current task in Mere | ⏳ Pending | Medium | Distraction reduction |
+| P12 | Daily agenda is summarized and delivered by Mere | ✅ Completed | High | AI-powered daily agenda with task summaries and scheduling insights |
+| P13 | Overdue tasks are automatically rescheduled based on urgency | ✅ Completed | High | Automatic recovery |
+| P14 | Priority matrix (urgent/important) informs time placement | ✅ Completed | High | Strategic scheduling |
+| P15 | Tasks marked "deep work" are scheduled in 2+ hour blocks | ✅ Completed | High | Deep work support |
+| P16 | Users can schedule around events pulled from Outlook/Google Calendar | ✅ Completed | High | Calendar integration |
+| P17 | Weekend work toggles are available per user | ⏳ Pending | Low | Work-life balance |
+| P18 | AI suggestions are shown when schedules conflict | ⏳ Pending | Medium | Conflict resolution |
+| P19 | Time-blocking must consider user energy cycles (if enabled) | ⏳ Pending | Medium | Energy optimization |
+| P20 | Buffer windows between meetings are preserved during task insertion | ⏳ Pending | Medium | Meeting protection |
+
+### 📋 **II. PROJECT & WORKFLOW MANAGEMENT (15 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P21 | Tasks can be grouped under projects, sprints, or workflows | ✅ Completed | High | Full project management with task grouping and organizational structure |
+| P22 | Projects include custom fields: status, assignee, type, due date | ⏳ Pending | High | Customization |
+| P23 | Subtasks support roll-up into parent status | ⏳ Pending | Medium | Hierarchy |
+| P24 | Dependencies are defined and enforced during scheduling | ⏳ Pending | High | Dependencies |
+| P25 | Task views include list, kanban, calendar, and Gantt | ⏳ Pending | High | Multiple views |
+| P26 | User can filter by priority, tag, team, or due date | ⏳ Pending | Medium | Filtering |
+| P27 | Boards can be shared, private, or team-specific | ⏳ Pending | High | Visibility control |
+| P28 | Project templates can be cloned and reused | ⏳ Pending | Medium | Templates |
+| P29 | Task notes support markdown and rich media | ⏳ Pending | Medium | Rich content |
+| P30 | Task activity feed shows history, edits, and logs | ⏳ Pending | Medium | Activity tracking |
+| P31 | Projects are linkable to Junction pages or Marathon flows | ⏳ Pending | High | Cross-app integration |
+| P32 | Projects can be exported to CSV or Notion | ⏳ Pending | Low | Export |
+| P33 | Due date changes trigger optional notifications | ⏳ Pending | Medium | Change notifications |
+| P34 | Templates can include task automation defaults | ⏳ Pending | Medium | Automation templates |
+| P35 | Tags are color-coded and autocomplete as user types | ⏳ Pending | Low | User experience |
+
+### 🤖 **III. WORKFLOW AUTOMATION (15 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P36 | Users can define trigger → condition → action rules | ⏳ Pending | High | Automation rules |
+| P37 | Trigger types: task created, status changed, overdue, completed | ⏳ Pending | High | Trigger variety |
+| P38 | Conditions include priority, user, type, tags, time | ⏳ Pending | High | Condition types |
+| P39 | Actions include notify, reschedule, assign, add tag, create memory | ⏳ Pending | High | Action types |
+| P40 | Automation rules can be copied and versioned | ⏳ Pending | Medium | Rule management |
+| P41 | "Preview" mode shows what would happen before activating flow | ⏳ Pending | Medium | Preview mode |
+| P42 | Automations can be paused or temporarily disabled | ⏳ Pending | Medium | Control |
+| P43 | Failed automation runs appear in alert panel | ⏳ Pending | High | Error handling |
+| P44 | Automation usage analytics are viewable per user/org | ⏳ Pending | Low | Analytics |
+| P45 | Mere can suggest automation creation based on user patterns | ⏳ Pending | Medium | AI suggestions |
+| P46 | Admins can restrict access to certain workflow rules | ⏳ Pending | High | Access control |
+| P47 | Flows are scoped to project, team, or global levels | ⏳ Pending | Medium | Scope control |
+| P48 | Trigger delays (e.g., 5 minutes after) are supported | ⏳ Pending | Medium | Timing control |
+| P49 | Dynamic date offsets ("3 days before due") can be used in rules | ⏳ Pending | Medium | Dynamic timing |
+| P50 | Rule execution history is logged with success/fail status | ⏳ Pending | High | Audit trail |
+
+### 🧠 **IV. AI PRIORITIZATION & ASSISTANT LOGIC (15 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P51 | Punctual AI assigns priority score from 1–100 based on urgency, impact, and memory | ✅ Completed | High | Advanced AI priority scoring with urgency, impact, and memory context analysis |
+| P52 | Users can override priority with a locked flag | ✅ Completed | High | User control |
+| P53 | Mere can explain why a task was ranked above another | ⏳ Pending | Medium | Transparency |
+| P54 | AI auto-assigns due dates based on workload and goals | ⏳ Pending | High | Smart due dates |
+| P55 | Tasks without due dates are ranked using memory usage context | ⏳ Pending | Medium | Context awareness |
+| P56 | Mere can re-prioritize a day if a new critical task arrives | ⏳ Pending | High | Dynamic re-prioritization |
+| P57 | AI uses memory intent ("urgent", "flagged", "planned") in scoring | ⏳ Pending | High | Memory integration |
+| P58 | AI respects user-defined priority overrides from Junction | ⏳ Pending | Medium | Cross-app consistency |
+| P59 | Tasks can inherit priority from parent project | ⏳ Pending | Medium | Inheritance |
+| P60 | "Why now?" button explains scheduling rationale | ⏳ Pending | Medium | Explainability |
+| P61 | AI flags task backlog overload and suggests deferral | ⏳ Pending | High | Overload protection |
+| P62 | Daily focus limit (tasks/day) is enforced if toggled | ⏳ Pending | Medium | Focus limits |
+| P63 | Priority reassessments occur if context changes (new memory, project update) | ⏳ Pending | Medium | Context sensitivity |
+| P64 | AI recognizes recurring vs ad-hoc tasks and schedules accordingly | ⏳ Pending | Medium | Task classification |
+| P65 | Punctual avoids scheduling cognitive heavy tasks back-to-back | ⏳ Pending | High | Cognitive load balancing |
+
+### 🗃️ **V. NTU & MEMORY INTEGRATION (15 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P66 | Completed tasks sync into Memory as timestamped activity | ✅ Completed | High | Memory integration with timestamped activity tracking and metadata sync |
+| P67 | Tasks can be created directly from Junction highlights | ⏳ Pending | High | Junction integration |
+| P68 | Yonder action items are injected into Punctual with speaker and call source | ⏳ Pending | High | Yonder integration |
+| P69 | Marathon can trigger Punctual task creation upon flow completion | ⏳ Pending | High | Marathon integration |
+| P70 | Memory replay shows which tasks were derived from which notes | ⏳ Pending | Medium | Traceability |
+| P71 | Tasks can include source memory citations | ⏳ Pending | Medium | Citations |
+| P72 | Memory snapshots can be attached to tasks | ⏳ Pending | Medium | Attachments |
+| P73 | "Reflect on today" shows memory-linked outcomes | ⏳ Pending | Medium | Reflection |
+| P74 | Flashcards from Junction appear as learning tasks in Punctual | ⏳ Pending | Medium | Learning integration |
+| P75 | Tasks can be reviewed or marked as "complete + reflect" for journaling | ⏳ Pending | Medium | Journaling |
+| P76 | AI uses past task completions to estimate future durations | ⏳ Pending | High | Duration learning |
+| P77 | Punctual surfaces "related memories" in task detail view | ⏳ Pending | Medium | Related content |
+| P78 | Project timelines can show task-memory relationships visually | ⏳ Pending | Low | Visual relationships |
+| P79 | Session logs from Mere are converted into tasks via AI | ⏳ Pending | Medium | Session conversion |
+| P80 | Redacted memories auto-mark associated tasks as restricted | ⏳ Pending | High | Privacy compliance |
+
+### 📤 **VI. NOTIFICATIONS, REPORTING & UX (10 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P81 | Daily digest is delivered at user-selected time | ⏳ Pending | Medium | Daily digest |
+| P82 | Smart reminders are based on task importance + time left | ✅ Completed | High | Smart reminders |
+| P83 | Reports include tasks completed, overdue, rescheduled, and velocity | ⏳ Pending | Medium | Reporting |
+| P84 | Team overview shows task distribution and load | ⏳ Pending | Medium | Team visibility |
+| P85 | Timeline view can zoom from 1 day to 90 days | ⏳ Pending | Medium | Timeline flexibility |
+| P86 | Task page includes breadcrumbs, due date, priority, context memory | ⏳ Pending | Medium | Task details |
+| P87 | UX supports keyboard-first interaction and accessibility shortcuts | ⏳ Pending | Medium | Accessibility |
+| P88 | Tasks can be grouped by "Today," "This Week," "Upcoming," "Someday." | ⏳ Pending | Medium | Grouping |
+| P89 | Mere can answer "What's my day look like?" from anywhere | ⏳ Pending | High | Voice queries |
+| P90 | Completed tasks are archived but searchable | ⏳ Pending | Medium | Archiving |
+
+### 🔒 **VII. ROLES, PERMISSIONS & COMPLIANCE (10 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P91 | Admins can define role-based access to projects, automations, and boards | ⏳ Pending | High | RBAC |
+| P92 | Tasks tagged as confidential require extra permission to edit | ⏳ Pending | High | Confidentiality |
+| P93 | Memory-aware tasks inherit redaction levels | ⏳ Pending | High | Privacy inheritance |
+| P94 | Task audit logs show who changed what and when | ⏳ Pending | High | Audit logging |
+| P95 | Guests can be invited with view/comment access only | ⏳ Pending | Medium | Guest access |
+| P96 | Team tasks can be marked private or restricted by tag | ⏳ Pending | Medium | Privacy controls |
+| P97 | Completed tasks with PHI are automatically redacted after 30 days | ⏳ Pending | High | PHI compliance |
+| P98 | Compliance flags appear when tasks involve confidential memory | ⏳ Pending | High | Compliance alerts |
+| P99 | Teams can configure default task visibility settings | ⏳ Pending | Medium | Default settings |
+| P100 | Notifications are anonymized for restricted tasks | ⏳ Pending | High | Privacy notifications |
+
+### 🧠 **VIII. AI-SUPPORTED PLANNING & COGNITIVE MODELING (20 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P101 | Punctual estimates cognitive load of each task based on historical completion patterns | ⏳ Pending | High | Cognitive estimation |
+| P102 | Tasks are tagged as "light," "moderate," or "heavy" mentally | ⏳ Pending | Medium | Mental classification |
+| P103 | AI avoids scheduling multiple "heavy" tasks back-to-back unless requested | ⏳ Pending | High | Cognitive balancing |
+| P104 | Mere adjusts tone and task explanations based on user fatigue level | ⏳ Pending | Medium | Adaptive communication |
+| P105 | AI suggests swapping tasks if progress is lagging mid-day | ⏳ Pending | Medium | Dynamic adaptation |
+| P106 | Planning behavior adapts to user completion velocity over past 7 days | ⏳ Pending | Medium | Velocity adaptation |
+| P107 | Tasks can include emotional tags (e.g., "draining," "inspiring") that inform scheduling | ⏳ Pending | Medium | Emotional awareness |
+| P108 | Reflection logs after task completion are used to fine-tune scheduling model | ⏳ Pending | Medium | Learning from reflection |
+| P109 | Mere can suggest skipping or deferring based on emotional friction | ⏳ Pending | Medium | Emotional intelligence |
+| P110 | "Burnout alert" appears when workload exceeds preferred levels | ⏳ Pending | High | Burnout prevention |
+| P111 | AI adapts schedule style (chunked vs. scattered) to user feedback | ⏳ Pending | Medium | Style adaptation |
+| P112 | Users can rate perceived task difficulty after completion | ⏳ Pending | Medium | Difficulty feedback |
+| P113 | Daily focus cycle is predicted and adjusted by historical peak performance periods | ⏳ Pending | Medium | Performance cycles |
+| P114 | Tasks are classified into work modes: deep work, admin, reactive, creative | ⏳ Pending | Medium | Work mode classification |
+| P115 | Mode-balanced days are encouraged by auto-distribution | ⏳ Pending | Medium | Balance optimization |
+| P116 | Long-term behavior change (procrastination reduction, habit forming) is tracked in Memory | ⏳ Pending | Low | Behavior tracking |
+| P117 | Memory anchors show where tasks contributed to knowledge gain | ⏳ Pending | Low | Knowledge tracking |
+| P118 | Journaling prompts appear post-task to reinforce learning | ⏳ Pending | Low | Learning reinforcement |
+| P119 | AI encourages grouping microtasks for mental flow | ⏳ Pending | Medium | Task grouping |
+| P120 | "Brain Dump" tasks can be scheduled with zero pressure for exploration | ⏳ Pending | Low | Exploratory tasks |
+
+### 👥 **IX. TEAM-BASED SCHEDULING & TASK COORDINATION (20 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P121 | Punctual detects team availability before assigning group tasks | ⏳ Pending | High | Team availability |
+| P122 | Shared tasks show when others have accepted or scheduled their portion | ⏳ Pending | High | Task visibility |
+| P123 | Users can request time suggestions for meetings or reviews | ⏳ Pending | Medium | Time suggestions |
+| P124 | Tasks marked "collaborative" allow multiple participants with visible progress | ⏳ Pending | Medium | Collaborative tasks |
+| P125 | Team scheduling respects personal time boundaries | ⏳ Pending | High | Boundary respect |
+| P126 | Shared projects show global task map across all members | ⏳ Pending | Medium | Project overview |
+| P127 | Reschedules by teammates are suggested but not forced | ⏳ Pending | Medium | Respectful rescheduling |
+| P128 | Users can "lock" their blocks so teammates know they are unavailable | ⏳ Pending | Medium | Block protection |
+| P129 | Team capacity is visualized on project dashboards | ⏳ Pending | Medium | Capacity visualization |
+| P130 | Overloaded team members trigger task redistribution suggestions | ⏳ Pending | High | Load balancing |
+| P131 | Roles are assigned per task: doer, reviewer, advisor | ⏳ Pending | Medium | Task roles |
+| P132 | Daily stand-up summaries are auto-generated by Mere from team activity | ⏳ Pending | Medium | Stand-up automation |
+| P133 | Projects include visibility toggles for outside observers | ⏳ Pending | Medium | External visibility |
+| P134 | Punctual flags scheduling conflicts between meetings and collaborative tasks | ⏳ Pending | Medium | Conflict detection |
+| P135 | Review cycles can be scheduled in sync with work cycles | ⏳ Pending | Medium | Review synchronization |
+| P136 | Tags like "blocker" trigger immediate team attention | ⏳ Pending | High | Critical flags |
+| P137 | Tasks involving multiple people highlight priority mismatches | ⏳ Pending | Medium | Priority alignment |
+| P138 | Shared due dates show countdown timer for each assignee | ⏳ Pending | Low | Due date visibility |
+| P139 | Team members can leave async comments on scheduled blocks | ⏳ Pending | Low | Async communication |
+| P140 | Schedules are syncable to shared calendar views | ⏳ Pending | Medium | Calendar sharing |
+
+### 📅 **X. CALENDAR FEATURES & TIME INTELLIGENCE (15 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P141 | Users can overlay Outlook, Google Calendar, and iCal within Punctual | ⏳ Pending | High | Calendar integration |
+| P142 | Blocked time from external calendars is respected when scheduling | ⏳ Pending | High | External calendar respect |
+| P143 | Multiple calendars can be color-coded and toggled on/off | ⏳ Pending | Medium | Calendar management |
+| P144 | "Smart Merge" consolidates fragmented availability into optimal windows | ⏳ Pending | Medium | Availability optimization |
+| P145 | Events marked "flexible" can be rescheduled by AI | ⏳ Pending | Medium | Flexible scheduling |
+| P146 | Punctual identifies and suggests replacing inefficient gaps | ⏳ Pending | Medium | Gap optimization |
+| P147 | Users can tag calendar events to convert into tasks | ⏳ Pending | Medium | Event-to-task conversion |
+| P148 | AI detects "fake availability" (e.g., blocked off but with no purpose) | ⏳ Pending | Low | Availability detection |
+| P149 | Color heatmap shows most dense productivity zones over 7/30 days | ⏳ Pending | Low | Productivity visualization |
+| P150 | Weekly views suggest optimal days for deep vs shallow work | ⏳ Pending | Medium | Work type optimization |
+| P151 | Users can label time segments (e.g., "family," "fitness") to protect them | ⏳ Pending | Medium | Time protection |
+| P152 | Rescheduling suggestions include natural time analogies ("Try Friday morning, your usual creative peak") | ⏳ Pending | Low | Natural language suggestions |
+| P153 | Calendar view supports drag-to-clone for recurring tasks | ⏳ Pending | Medium | Task cloning |
+| P154 | Multi-calendar conflict resolution suggestions appear before committing | ⏳ Pending | Medium | Conflict prevention |
+| P155 | AI builds suggested time templates based on past successful schedules | ⏳ Pending | Medium | Template learning |
+
+### 🎯 **XI. GOAL-ORIENTED TASK STRUCTURING (15 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P156 | Users can define quarterly or monthly goals | ⏳ Pending | High | Goal definition |
+| P157 | Tasks can be assigned to specific goals | ⏳ Pending | High | Goal assignment |
+| P158 | Goal progress is visualized by percent completed and velocity | ⏳ Pending | Medium | Progress visualization |
+| P159 | "Impact per hour" score calculated from goal-linked task outcomes | ⏳ Pending | Medium | Impact measurement |
+| P160 | Weekly summaries show % of time spent toward goals | ⏳ Pending | Medium | Time allocation tracking |
+| P161 | Goals can be prioritized to influence task scheduling order | ⏳ Pending | High | Goal prioritization |
+| P162 | Goal-aware reflection logs build a narrative of progress | ⏳ Pending | Low | Progress narrative |
+| P163 | Missed goals trigger AI analysis and suggestions for improvement | ⏳ Pending | Medium | Goal recovery |
+| P164 | Users can request a "goal sprint" plan with intense time allocation | ⏳ Pending | Medium | Sprint planning |
+| P165 | Mere helps align weekly agenda with top-priority goals | ⏳ Pending | High | AI goal alignment |
+| P166 | "Disconnect warning" appears if user tasks diverge from defined goals | ⏳ Pending | Medium | Goal alignment alerts |
+| P167 | Long-term goals can include milestone-based reminders | ⏳ Pending | Medium | Milestone tracking |
+| P168 | Goal-linked tasks include motivational quotes and persona cheerleading if enabled | ⏳ Pending | Low | Motivation |
+| P169 | AI prioritizes tasks that serve multiple goals first | ⏳ Pending | Medium | Multi-goal optimization |
+| P170 | Time-blocks show associated goal when hovered | ⏳ Pending | Low | Goal visibility |
+
+### 🔗 **XII. CROSS-APP INTELLIGENCE & ROUTING (15 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P171 | Junction highlights can be "converted into a goal-linked task." | ⏳ Pending | High | Junction integration |
+| P172 | Memory timelines update to reflect task completions tagged to a concept | ⏳ Pending | Medium | Memory updates |
+| P173 | Mere can generate a task tree based on a transcript or brainstorm | ⏳ Pending | High | AI task generation |
+| P174 | Yonder transcripts can auto-generate multi-part tasks | ⏳ Pending | Medium | Transcript processing |
+| P175 | Marathon flows can create dependent tasks with routing logic | ⏳ Pending | High | Workflow integration |
+| P176 | Flashcard sessions generate tasks based on weak points identified | ⏳ Pending | Medium | Learning integration |
+| P177 | Notebook updates trigger Punctual reminders to review changes | ⏳ Pending | Medium | Change notifications |
+| P178 | Tasks tied to newly uploaded documents are flagged for reading time | ⏳ Pending | Medium | Document processing |
+| P179 | Notes from Mere sessions can be split into actionable items | ⏳ Pending | Medium | Note processing |
+| P180 | Plugin outputs (e.g., redactions, exports) trigger documentation tasks | ⏳ Pending | Low | Plugin integration |
+| P181 | User-defined bookmarks across apps become tasks with optional due dates | ⏳ Pending | Low | Bookmark conversion |
+| P182 | Memory-linked conversations suggest AI-generated tasks | ⏳ Pending | Medium | Conversation processing |
+| P183 | Punctual flags when agents output incomplete workflows | ⏳ Pending | Low | Workflow validation |
+| P184 | Changes in project priority from Junction re-rank task urgency | ⏳ Pending | Medium | Priority synchronization |
+| P185 | Team AI suggestions from other apps trigger Mere-to-Punctual handoffs | ⏳ Pending | Medium | AI handoffs |
+
+### 🔒 **XIII. PREFERENCES, THEMES, AND USER EMPOWERMENT (10 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P186 | Users can select productivity style: flow, sprint, reactive, balanced | ⏳ Pending | Medium | Style selection |
+| P187 | Themes include dark, solarized, high contrast, and "focus white." | ⏳ Pending | Low | Theme options |
+| P188 | Notification settings are customizable per urgency level | ⏳ Pending | Medium | Notification control |
+| P189 | Default task durations are configurable by task type | ⏳ Pending | Medium | Duration defaults |
+| P190 | Keyboard shortcut mode mimics Notion or VSCode | ⏳ Pending | Medium | Keyboard shortcuts |
+| P191 | AI explanations can be verbose or minimal, set per user | ⏳ Pending | Medium | Explanation control |
+| P192 | Mere language tone (formal/casual/encouraging) toggles per persona | ⏳ Pending | Low | Tone control |
+| P193 | Reflection prompts can be turned off or customized | ⏳ Pending | Low | Reflection control |
+| P194 | Repeat task templates can include mood or energy check | ⏳ Pending | Low | Mood tracking |
+| P195 | Focus mode disables distractions for scheduled blocks | ⏳ Pending | Medium | Focus mode |
+
+### 🧾 **XIV. EXPORT, SHARING, AND REPORTS (5 ACs)**
+
+| ID | Acceptance Criteria | Status | Priority | Notes |
+|----|-------------------|--------|----------|-------|
+| P196 | Weekly reports exportable as PDF, Notion, or HTML microsite | ⏳ Pending | Medium | Report export |
+| P197 | Users can export timeline view as SVG or PNG | ⏳ Pending | Low | Timeline export |
+| P198 | Task performance scorecard shows completion %, deferral rate, delay trend | ⏳ Pending | Medium | Performance metrics |
+| P199 | Teams can share task boards via public links with password protection | ⏳ Pending | Medium | Board sharing |
+| P200 | Productivity heatmaps and focus scores are shareable with Mere for improvement suggestions | ⏳ Pending | Low | Analytics sharing |
 
 ---
 

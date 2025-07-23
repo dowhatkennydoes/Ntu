@@ -18,7 +18,9 @@ import {
   WrenchScrewdriverIcon,
   ArrowPathIcon,
   CheckCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  BookOpenIcon,
+  PuzzlePieceIcon
 } from '@heroicons/react/24/outline'
 import { useWorkflow } from './WorkflowProvider'
 
@@ -94,6 +96,30 @@ interface WorkflowMetadata {
   category: string
   version: string
   versionHistory: WorkflowVersion[]
+}
+
+// MA92: Subflow interfaces
+interface Subflow {
+  id: string
+  name: string
+  description: string
+  nodes: WorkflowNode[]
+  connections: NodeConnection[]
+  inputPorts: NodePort[]
+  outputPorts: NodePort[]
+  category: string
+  version: string
+  createdBy: string
+  createdAt: Date
+  isReusable: boolean
+}
+
+interface SubflowNode extends WorkflowNode {
+  subflowId: string
+  subflowConfig: {
+    inputMappings: Record<string, string>
+    outputMappings: Record<string, string>
+  }
 }
 
 // MA7: Version control interfaces
@@ -202,6 +228,12 @@ export function MarathonWorkflowBuilder() {
   const [showPermissionsModal, setShowPermissionsModal] = useState(false)
   const [currentUserRole, setCurrentUserRole] = useState<string>('editor') // Would come from auth context
   
+  // MA92: Subflow state
+  const [subflows, setSubflows] = useState<Subflow[]>([])
+  const [showSubflowModal, setShowSubflowModal] = useState(false)
+  const [editingSubflow, setEditingSubflow] = useState<Subflow | null>(null)
+  const [showSubflowLibrary, setShowSubflowLibrary] = useState(false)
+  
   // MA72: RBAC permission checking functions
   const canUserPerformAction = (action: 'view' | 'edit' | 'execute'): boolean => {
     const permissions = workflowMetadata.permissions
@@ -231,6 +263,103 @@ export function MarathonWorkflowBuilder() {
       permissions: { ...prev.permissions, ...newPermissions },
       updatedAt: new Date()
     }))
+  }
+
+  // MA92: Subflow management functions
+  const createSubflowFromSelection = () => {
+    const selectedNodes = nodes.filter(node => selectedNode === node.id)
+    if (selectedNodes.length === 0) return
+
+    const subflowConnections = connections.filter(conn =>
+      selectedNodes.some(node => node.id === conn.sourceNodeId) &&
+      selectedNodes.some(node => node.id === conn.targetNodeId)
+    )
+
+    const newSubflow: Subflow = {
+      id: `subflow-${Date.now()}`,
+      name: `Subflow ${subflows.length + 1}`,
+      description: 'Created from selected nodes',
+      nodes: selectedNodes,
+      connections: subflowConnections,
+      inputPorts: [],
+      outputPorts: [],
+      category: 'custom',
+      version: '1.0.0',
+      createdBy: 'current-user',
+      createdAt: new Date(),
+      isReusable: true
+    }
+
+    setSubflows(prev => [...prev, newSubflow])
+    setEditingSubflow(newSubflow)
+    setShowSubflowModal(true)
+  }
+
+  const addSubflowToCanvas = (subflow: Subflow, position: NodePosition) => {
+    const subflowNode: SubflowNode = {
+      id: `subflow-node-${Date.now()}`,
+      type: 'action',
+      title: subflow.name,
+      description: subflow.description,
+      position,
+      ports: {
+        inputs: subflow.inputPorts,
+        outputs: subflow.outputPorts
+      },
+      config: {},
+      status: 'idle',
+      category: 'subflows',
+      icon: CubeIcon,
+      color: 'bg-purple-500',
+      subflowId: subflow.id,
+      subflowConfig: {
+        inputMappings: {},
+        outputMappings: {}
+      }
+    }
+
+    setNodes(prev => [...prev, subflowNode])
+  }
+
+  const executeSubflow = async (subflowNode: SubflowNode, inputData: any) => {
+    const subflow = subflows.find(sf => sf.id === subflowNode.subflowId)
+    if (!subflow) return { data: null, outputPorts: [] }
+
+    // Execute the subflow's nodes in sequence
+    // This is a simplified version - real implementation would need more complex orchestration
+    let currentData = inputData
+    
+    for (const node of subflow.nodes) {
+      // Execute each node with the current data
+      // This would be the same logic as the main workflow execution
+      const mockExecution: WorkflowExecution = {
+        id: `subflow-exec-${Date.now()}`,
+        status: 'running',
+        startTime: new Date(),
+        executedNodes: [],
+        errors: []
+      }
+      currentData = await executeNodeWithBranching(node.id, currentData, mockExecution)
+    }
+
+    return {
+      data: currentData,
+      outputPorts: subflowNode.ports.outputs.map(p => p.id)
+    }
+  }
+
+  const saveSubflow = (subflow: Subflow) => {
+    setSubflows(prev => prev.map(sf => sf.id === subflow.id ? subflow : sf))
+    setShowSubflowModal(false)
+    setEditingSubflow(null)
+  }
+
+  const deleteSubflow = (subflowId: string) => {
+    setSubflows(prev => prev.filter(sf => sf.id !== subflowId))
+    // Also remove any subflow nodes using this subflow
+    setNodes(prev => prev.filter(node => 
+      !(node as SubflowNode).subflowId || (node as SubflowNode).subflowId !== subflowId
+    ))
   }
   
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -529,6 +658,91 @@ export function MarathonWorkflowBuilder() {
     setIsPanning(false)
   }
 
+  // MA12: Fit-to-View functionality 
+  const fitToView = () => {
+    if (nodes.length === 0) return
+
+    const padding = 50
+    const bounds = nodes.reduce((acc, node) => ({
+      minX: Math.min(acc.minX, node.position.x),
+      minY: Math.min(acc.minY, node.position.y),
+      maxX: Math.max(acc.maxX, node.position.x + 200), // Node width
+      maxY: Math.max(acc.maxY, node.position.y + 150)  // Node height
+    }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity })
+
+    const contentWidth = bounds.maxX - bounds.minX + 2 * padding
+    const contentHeight = bounds.maxY - bounds.minY + 2 * padding
+
+    if (!canvasRef.current) return
+    const canvasRect = canvasRef.current.getBoundingClientRect()
+    
+    const scaleX = canvasRect.width / contentWidth
+    const scaleY = canvasRect.height / contentHeight
+    const scale = Math.min(scaleX, scaleY, 1) // Don't zoom in beyond 100%
+
+    setCanvasScale(scale)
+    setCanvasOffset({
+      x: (canvasRect.width - contentWidth * scale) / 2 - bounds.minX * scale + padding * scale,
+      y: (canvasRect.height - contentHeight * scale) / 2 - bounds.minY * scale + padding * scale
+    })
+  }
+
+  // MA17: Right-click context menu
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean
+    x: number
+    y: number
+    nodeId?: string
+  }>({ visible: false, x: 0, y: 0 })
+
+  const showContextMenu = (e: React.MouseEvent, nodeId?: string) => {
+    e.preventDefault()
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      nodeId
+    })
+  }
+
+  const hideContextMenu = () => {
+    setContextMenu({ visible: false, x: 0, y: 0 })
+  }
+
+  // Context menu actions
+  const contextMenuActions = [
+    {
+      label: 'Add Node',
+      action: () => {
+        // Open node palette or show add menu
+        hideContextMenu()
+      }
+    },
+    {
+      label: 'Paste',
+      action: () => {
+        // Implement paste functionality
+        hideContextMenu()
+      },
+      disabled: true // Enable when clipboard has data
+    },
+    {
+      label: 'Group Selected',
+      action: () => {
+        // Implement grouping functionality
+        hideContextMenu()
+      },
+      disabled: !selectedNode
+    },
+    {
+      label: 'Fit to View',
+      action: () => {
+        fitToView()
+        hideContextMenu()
+      }
+    }
+  ]
+
   // MA13: Add node from palette
   const addNodeToCanvas = (template: WorkflowNode, position: NodePosition) => {
     const newNode: WorkflowNode = {
@@ -763,6 +977,32 @@ export function MarathonWorkflowBuilder() {
         return {
           data: { ...currentData, iterations: iteration },
           outputPorts: ['exit']
+        }
+      
+      case 'memory-router':
+        const memory = inputData?.memory || inputData
+        const routingRules = node.config.routingRules || []
+        const defaultOutput = node.config.defaultOutput || 'medium-confidence'
+        
+        // MA93: Evaluate routing rules based on memory values
+        for (const rule of routingRules) {
+          try {
+            const condition = rule.condition.replace(/memory\./g, 'data.')
+            if (evaluateCondition(condition, { data: memory })) {
+              return {
+                data: { ...inputData, memory, routedBy: rule.condition },
+                outputPorts: [rule.output]
+              }
+            }
+          } catch (error) {
+            console.warn('Memory routing condition failed:', rule.condition, error)
+          }
+        }
+        
+        // If no rule matches, use default output
+        return {
+          data: { ...inputData, memory, routedBy: 'default' },
+          outputPorts: [defaultOutput]
         }
       
       default:
@@ -1062,6 +1302,36 @@ export function MarathonWorkflowBuilder() {
         color: 'bg-blue-500'
       },
       {
+        id: 'notebook-updated',
+        type: 'trigger',
+        title: 'Notebook Updated',
+        description: 'Triggers when a notebook title or body content changes',
+        position: { x: 0, y: 0 },
+        ports: {
+          inputs: [],
+          outputs: [
+            { id: 'notebook', type: 'output', dataType: 'object', connected: false },
+            { id: 'changes', type: 'output', dataType: 'object', connected: false },
+            { id: 'previousVersion', type: 'output', dataType: 'object', connected: false }
+          ]
+        },
+        config: {
+          eventType: 'notebook.updated',
+          filters: {
+            notebookId: '', // Empty means any notebook
+            changeTypes: ['title', 'body', 'sections'], // What types of changes to detect
+            minChangeSize: 10, // Minimum character change threshold
+            excludeMinorEdits: true, // Skip typo corrections and minor formatting
+            includeMetadata: true // Include author, timestamp, etc.
+          },
+          debounceMs: 5000 // Wait 5 seconds after last edit before triggering
+        },
+        status: 'idle',
+        category: 'triggers',
+        icon: BookOpenIcon,
+        color: 'bg-blue-600'
+      },
+      {
         id: 'note-tagged',
         type: 'trigger',
         title: 'Note Tagged',
@@ -1126,9 +1396,21 @@ export function MarathonWorkflowBuilder() {
         config: {
           eventType: 'schedule.trigger',
           schedule: {
-            type: 'recurring',
-            interval: 'daily',
-            time: '09:00'
+            type: 'cron', // 'cron', 'interval', 'once'
+            cronExpression: '0 9 * * *', // Daily at 9:00 AM
+            timezone: 'UTC',
+            description: 'Daily at 9:00 AM',
+            // Alternative interval-based scheduling
+            interval: {
+              unit: 'days', // 'minutes', 'hours', 'days', 'weeks'
+              value: 1,
+              startTime: '09:00'
+            },
+            // One-time scheduling
+            runOnce: {
+              datetime: '',
+              enabled: false
+            }
           }
         },
         status: 'idle',
@@ -1584,6 +1866,45 @@ export function MarathonWorkflowBuilder() {
         category: 'conditions',
         icon: ArrowPathIcon,
         color: 'bg-purple-500'
+      },
+      {
+        id: 'memory-router',
+        type: 'condition',
+        title: 'Memory Router',
+        description: 'Route based on memory values, tags, or properties',
+        position: { x: 0, y: 0 },
+        ports: {
+          inputs: [
+            { id: 'memory', type: 'input', dataType: 'object', connected: false },
+            { id: 'routingConfig', type: 'input', dataType: 'object', connected: false }
+          ],
+          outputs: [
+            { id: 'high-confidence', type: 'output', dataType: 'object', connected: false },
+            { id: 'medium-confidence', type: 'output', dataType: 'object', connected: false },
+            { id: 'low-confidence', type: 'output', dataType: 'object', connected: false },
+            { id: 'has-tags', type: 'output', dataType: 'object', connected: false },
+            { id: 'no-tags', type: 'output', dataType: 'object', connected: false },
+            { id: 'private', type: 'output', dataType: 'object', connected: false },
+            { id: 'public', type: 'output', dataType: 'object', connected: false }
+          ]
+        },
+        config: {
+          routingRules: [
+            { condition: 'memory.confidence > 0.8', output: 'high-confidence' },
+            { condition: 'memory.confidence > 0.5', output: 'medium-confidence' },
+            { condition: 'memory.confidence <= 0.5', output: 'low-confidence' },
+            { condition: 'memory.tags.length > 0', output: 'has-tags' },
+            { condition: 'memory.tags.length === 0', output: 'no-tags' },
+            { condition: 'memory.visibility === "private"', output: 'private' },
+            { condition: 'memory.visibility === "public"', output: 'public' }
+          ],
+          defaultOutput: 'medium-confidence',
+          memoryFields: ['confidence', 'tags', 'visibility', 'category', 'importance', 'lastAccessed']
+        },
+        status: 'idle',
+        category: 'conditions',
+        icon: DocumentTextIcon,
+        color: 'bg-indigo-500'
       }
     ]
   }
@@ -1721,6 +2042,40 @@ export function MarathonWorkflowBuilder() {
                 Test Workflow
               </button>
               
+              {/* MA12: Canvas Controls */}
+              <div className="flex items-center space-x-1 border border-gray-300 rounded-lg">
+                <button
+                  onClick={() => handleZoom(1, 0, 0)}
+                  className="px-3 py-2 hover:bg-gray-100 transition-colors"
+                  title="Zoom In"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleZoom(-1, 0, 0)}
+                  className="px-3 py-2 hover:bg-gray-100 transition-colors border-l border-r border-gray-300"
+                  title="Zoom Out"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={fitToView}
+                  className="px-3 py-2 hover:bg-gray-100 transition-colors"
+                  title="Fit to View"
+                >
+                  <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* MA71: Flow Visibility Settings */}
+              <button
+                onClick={() => setShowPermissionsModal(!showPermissionsModal)}
+                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <UserIcon className="h-4 w-4 mr-2" />
+                Permissions
+              </button>
+
               {/* MA7: Version Control */}
               <button
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
@@ -1728,6 +2083,24 @@ export function MarathonWorkflowBuilder() {
               >
                 <DocumentDuplicateIcon className="h-4 w-4 mr-2" />
                 Versions
+              </button>
+
+              {/* MA92: Subflow Management */}
+              <button
+                onClick={createSubflowFromSelection}
+                disabled={!selectedNode}
+                className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:bg-gray-400"
+              >
+                <CubeIcon className="h-4 w-4 mr-2" />
+                Create Subflow
+              </button>
+
+              <button
+                onClick={() => setShowSubflowLibrary(!showSubflowLibrary)}
+                className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <PuzzlePieceIcon className="h-4 w-4 mr-2" />
+                Subflow Library
               </button>
               
               {/* MA10: Webhooks */}
@@ -1822,7 +2195,8 @@ export function MarathonWorkflowBuilder() {
         <div className="flex-1 relative overflow-hidden"
           onMouseMove={(e) => { handleNodeMove(e); handleMouseMove(e); }}
           onMouseUp={handleNodeMouseUp}
-          onClick={handleCanvasClick}
+          onClick={(e) => { handleCanvasClick(); hideContextMenu(); }}
+          onContextMenu={(e) => showContextMenu(e)}
         >
           <div
             ref={canvasRef}
@@ -2417,6 +2791,242 @@ export function MarathonWorkflowBuilder() {
           Complete Workflow
         </button>
       </div>
+
+      {/* MA71: Flow Visibility & Permissions Modal */}
+      {showPermissionsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Flow Permissions</h3>
+              <button onClick={() => setShowPermissionsModal(false)} className="text-gray-500 hover:text-gray-700">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Visibility
+                </label>
+                <select
+                  value={workflowMetadata.permissions.visibility}
+                  onChange={(e) => updateWorkflowPermissions({
+                    visibility: e.target.value as 'private' | 'team' | 'org' | 'public'
+                  })}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  <option value="private">Private - Only me</option>
+                  <option value="team">Team - My team members</option>
+                  <option value="org">Organization - All org members</option>
+                  <option value="public">Public - Everyone</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Allowed Roles
+                </label>
+                <div className="space-y-2">
+                  {['admin', 'editor', 'viewer', 'contributor'].map(role => (
+                    <label key={role} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={workflowMetadata.permissions.allowedRoles.includes(role)}
+                        onChange={(e) => {
+                          const currentRoles = workflowMetadata.permissions.allowedRoles
+                          const newRoles = e.target.checked
+                            ? [...currentRoles, role]
+                            : currentRoles.filter(r => r !== role)
+                          updateWorkflowPermissions({ allowedRoles: newRoles })
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="capitalize">{role}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Specific Users (Email addresses)
+                </label>
+                <textarea
+                  value={workflowMetadata.permissions.allowedUsers.join('\n')}
+                  onChange={(e) => updateWorkflowPermissions({
+                    allowedUsers: e.target.value.split('\n').filter(email => email.trim())
+                  })}
+                  placeholder="user1@example.com&#10;user2@example.com"
+                  className="w-full border border-gray-300 rounded px-3 py-2 h-20 resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                <button
+                  onClick={() => setShowPermissionsModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPermissionsModal(false)
+                    // In a real app, this would save to backend
+                    console.log('Permissions updated:', workflowMetadata.permissions)
+                  }}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                >
+                  Save Permissions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MA92: Subflow Creation Modal */}
+      {showSubflowModal && editingSubflow && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Edit Subflow</h3>
+              <button onClick={() => setShowSubflowModal(false)} className="text-gray-500 hover:text-gray-700">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={editingSubflow.name}
+                  onChange={(e) => setEditingSubflow({...editingSubflow, name: e.target.value})}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={editingSubflow.description}
+                  onChange={(e) => setEditingSubflow({...editingSubflow, description: e.target.value})}
+                  className="w-full border border-gray-300 rounded px-3 py-2 h-20 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={editingSubflow.isReusable}
+                    onChange={(e) => setEditingSubflow({...editingSubflow, isReusable: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <span>Make reusable across workflows</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                <button
+                  onClick={() => setShowSubflowModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => saveSubflow(editingSubflow)}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                >
+                  Save Subflow
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MA92: Subflow Library Modal */}
+      {showSubflowLibrary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Subflow Library</h3>
+              <button onClick={() => setShowSubflowLibrary(false)} className="text-gray-500 hover:text-gray-700">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {subflows.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No subflows created yet</p>
+              ) : (
+                subflows.map((subflow) => (
+                  <div key={subflow.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{subflow.name}</h4>
+                        <p className="text-sm text-gray-500">{subflow.description}</p>
+                        <p className="text-xs text-gray-400">
+                          {subflow.nodes.length} nodes • {subflow.connections.length} connections
+                        </p>
+                      </div>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        subflow.isReusable ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {subflow.isReusable ? 'Reusable' : 'Private'}
+                      </span>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={() => addSubflowToCanvas(subflow, { x: 100, y: 100 })}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Add to Canvas
+                      </button>
+                      <button
+                        onClick={() => deleteSubflow(subflow.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MA17: Right-click Context Menu */}
+      {contextMenu.visible && (
+        <div
+          className="fixed bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-50"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y
+          }}
+          onMouseLeave={hideContextMenu}
+        >
+          {contextMenuActions.map((action, index) => (
+            <button
+              key={index}
+              onClick={action.action}
+              disabled={action.disabled}
+              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                action.disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'
+              }`}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 } 

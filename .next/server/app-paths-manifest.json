@@ -1,1 +1,8 @@
-{}
+{
+  "/page": "app/page.js",
+  "/punctual/page": "app/punctual/page.js",
+  "/junction/page": "app/junction/page.js",
+  "/marathon/page": "app/marathon/page.js",
+  "/junction/notebook/[id]/page": "app/junction/notebook/[id]/page.js",
+  "/mere/page": "app/mere/page.js"
+}
