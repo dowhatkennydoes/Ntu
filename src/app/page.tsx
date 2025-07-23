@@ -17,7 +17,7 @@ export default function Home() {
         <MereSidebar onViewChange={setCurrentView} currentView={currentView} />
         <main className="flex-1 overflow-hidden">
           <div className="flex h-full">
-            <div className="flex-1">
+            <div className="flex-1 overflow-y-auto">
               <WorkflowDashboard />
             </div>
             <div className="w-96 border-l">
@@ -32,7 +32,7 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-background">
       <MereSidebar onViewChange={setCurrentView} currentView={currentView} />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-y-auto">
         {currentView === 'dashboard' ? <WorkflowDashboard /> : <MereChat />}
       </main>
     </div>

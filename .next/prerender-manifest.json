@@ -1,1 +1,11 @@
-{"version":4,"routes":{"/":{"experimentalBypassFor":[{"type":"header","key":"Next-Action"},{"type":"header","key":"content-type","value":"multipart/form-data;.*"}],"initialRevalidateSeconds":false,"srcRoute":"/","dataRoute":"/index.rsc"}},"dynamicRoutes":{},"notFoundRoutes":[],"preview":{"previewModeId":"6745cea769a0297332bb7b98bdad0bed","previewModeSigningKey":"39667520d73671bb9f543d17c416a15a1ab36c3a94f4d0b473b6fa3b5fb4172d","previewModeEncryptionKey":"862f9c298439f737d9e4437a40c5afee666505acbbec933fcce56504fcf38c15"}}
+{
+  "version": 4,
+  "routes": {},
+  "dynamicRoutes": {},
+  "notFoundRoutes": [],
+  "preview": {
+    "previewModeId": "1a5d6a44d6a7e3529fd63232d7d302d3",
+    "previewModeSigningKey": "f3a8273426f1338840d25f35bee257afc809caef1f461f6bb7b69f1192851a74",
+    "previewModeEncryptionKey": "2081bfe97d2f9608572ee55d6a6b3a30da8d94807701e45f556c0b25810b833d"
+  }
+}

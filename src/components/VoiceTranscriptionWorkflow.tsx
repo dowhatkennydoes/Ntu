@@ -30,6 +30,14 @@ interface TranscriptSegment {
   sentimentScore?: number // Y36: Sentiment score (-1 to 1)
   emotionalTone?: 'happy' | 'angry' | 'worried' | 'confused' | 'excited' | 'neutral' // Y38: Emotional tone
   intentCategory?: 'request' | 'complaint' | 'praise' | 'confusion' | 'urgency' | 'neutral' // Y37: Intent detection
+  urgencyScore?: number // Y39: Urgency score (0-1)
+  wordTimestamps?: Array<{ word: string, start: number, end: number }> // Y15: Word-level timestamps
+  isBookmarked?: boolean // Y11: Bookmark flag
+  isActionItem?: boolean // Y58: Action item flag
+  isQuestion?: boolean // Y123: Question detection
+  isDecision?: boolean // Y126: Decision point flag
+  nonVerbalCues?: string[] // Y33: Non-verbal cues
+  backchanneling?: boolean // Y32: Backchanneling detection
 }
 
 interface Speaker {
@@ -71,6 +79,53 @@ export function VoiceTranscriptionWorkflow() {
   const [processingStatus, setProcessingStatus] = useState('')
   const [lastSaveTime, setLastSaveTime] = useState<Date>(new Date())
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.7)
+  
+  // Y6: Auto-save state
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true)
+  const [lastAutoSave, setLastAutoSave] = useState<Date>(new Date())
+  
+  // Y11, Y12: Bookmarking state
+  const [bookmarkMode, setBookmarkMode] = useState(false)
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null)
+  
+  // Y31: Real-time sentiment state
+  const [realTimeSentiment, setRealTimeSentiment] = useState<{
+    overall: number
+    bySpeaker: Record<string, number>
+    recentChanges: Array<{ timestamp: number, speaker: string, sentiment: number }>
+  }>({
+    overall: 0,
+    bySpeaker: {},
+    recentChanges: []
+  })
+  
+  // Y58: Action items state
+  const [actionItems, setActionItems] = useState<Array<{
+    id: string
+    text: string
+    speaker: string
+    timestamp: number
+    assignedTo?: string
+    priority: 'low' | 'medium' | 'high'
+  }>>([])
+  
+  // Y127: Highlights state
+  const [highlights, setHighlights] = useState<Array<{
+    id: string
+    segmentId: string
+    importance: number
+    reason: string
+    timestamp: number
+  }>>([])
+  
+  // Y133: Topics state
+  const [topics, setTopics] = useState<Array<{
+    id: string
+    name: string
+    frequency: number
+    segments: string[]
+    sentiment: number
+  }>>([])
   
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -523,7 +578,17 @@ export function VoiceTranscriptionWorkflow() {
     }
     
     setBookmarks(prev => [...prev, newBookmark])
-  }, [isRecording, recordingTime, currentTime])
+    
+    // Mark current segment as bookmarked (Y11)
+    if (transcriptSegments.length > 0) {
+      const lastSegment = transcriptSegments[transcriptSegments.length - 1]
+      setTranscriptSegments(prev => prev.map(segment => 
+        segment.id === lastSegment.id 
+          ? { ...segment, isBookmarked: true }
+          : segment
+      ))
+    }
+  }, [isRecording, recordingTime, currentTime, transcriptSegments])
 
   // Y12: Keyboard shortcuts
   useEffect(() => {
@@ -568,6 +633,161 @@ export function VoiceTranscriptionWorkflow() {
   const handleComplete = () => {
     handleAutoSave()
     nextStep()
+  }
+
+
+
+  // Y15: Word-level timestamp generation
+  const generateWordTimestamps = (text: string, startTime: number, endTime: number) => {
+    const words = text.split(/\s+/)
+    const wordCount = words.length
+    const timePerWord = (endTime - startTime) / wordCount
+    
+    return words.map((word, index) => ({
+      word,
+      start: startTime + (index * timePerWord),
+      end: startTime + ((index + 1) * timePerWord)
+    }))
+  }
+
+  // Y32: Backchanneling detection
+  const detectBackchanneling = (text: string): boolean => {
+    const backchannelWords = ['mm-hmm', 'uh-huh', 'right', 'yeah', 'okay', 'sure', 'mhm', 'uh huh']
+    return backchannelWords.some(word => text.toLowerCase().includes(word))
+  }
+
+  // Y33: Non-verbal cue detection
+  const detectNonVerbalCues = (text: string): string[] => {
+    const cues: string[] = []
+    const lowerText = text.toLowerCase()
+    
+    if (lowerText.includes('laughter') || lowerText.includes('laughing')) cues.push('laughter')
+    if (lowerText.includes('sigh') || lowerText.includes('sighing')) cues.push('sigh')
+    if (lowerText.includes('pause') || lowerText.includes('silence')) cues.push('silence')
+    if (lowerText.includes('cough') || lowerText.includes('coughing')) cues.push('cough')
+    
+    return cues
+  }
+
+  // Y39: Urgency detection
+  const detectUrgency = (text: string): number => {
+    const urgentWords = ['urgent', 'emergency', 'asap', 'immediately', 'critical', 'important', 'quick', 'fast', 'now', 'help', 'deadline', 'due']
+    const words = text.toLowerCase().split(/\s+/)
+    const urgentCount = words.filter(word => urgentWords.includes(word)).length
+    return Math.min(1, urgentCount / 10) // Normalize to 0-1
+  }
+
+  // Y58: Action item detection
+  const detectActionItems = (text: string): boolean => {
+    const actionPhrases = ['we need to', 'we should', 'we must', 'action item', 'todo', 'to do', 'follow up', 'next steps', 'assign', 'responsible']
+    return actionPhrases.some(phrase => text.toLowerCase().includes(phrase))
+  }
+
+  // Y123: Question detection
+  const detectQuestion = (text: string): boolean => {
+    return text.includes('?') || 
+           text.toLowerCase().startsWith('what') ||
+           text.toLowerCase().startsWith('how') ||
+           text.toLowerCase().startsWith('when') ||
+           text.toLowerCase().startsWith('where') ||
+           text.toLowerCase().startsWith('why') ||
+           text.toLowerCase().startsWith('who') ||
+           text.toLowerCase().startsWith('can') ||
+           text.toLowerCase().startsWith('could') ||
+           text.toLowerCase().startsWith('would') ||
+           text.toLowerCase().startsWith('should')
+  }
+
+  // Y126: Decision point detection
+  const detectDecision = (text: string): boolean => {
+    const decisionPhrases = ['we decided', 'decision made', 'agreed to', 'chose to', 'selected', 'opted for', 'determined', 'resolved']
+    return decisionPhrases.some(phrase => text.toLowerCase().includes(phrase))
+  }
+
+  // Y127: Importance scoring
+  const calculateImportance = (segment: TranscriptSegment): number => {
+    let score = 0
+    
+    // Base score from sentiment intensity
+    if (segment.sentimentScore) {
+      score += Math.abs(segment.sentimentScore) * 0.3
+    }
+    
+    // Urgency bonus
+    if (segment.urgencyScore) {
+      score += segment.urgencyScore * 0.4
+    }
+    
+    // Action item bonus
+    if (segment.isActionItem) {
+      score += 0.5
+    }
+    
+    // Question bonus
+    if (segment.isQuestion) {
+      score += 0.3
+    }
+    
+    // Decision bonus
+    if (segment.isDecision) {
+      score += 0.6
+    }
+    
+    return Math.min(1, score)
+  }
+
+  // Y133: Topic extraction
+  const extractTopics = (segments: TranscriptSegment[]) => {
+    const wordFrequency: Record<string, number> = {}
+    const topicSegments: Record<string, string[]> = {}
+    
+    segments.forEach(segment => {
+      const words = segment.text.toLowerCase().split(/\s+/)
+      words.forEach(word => {
+        if (word.length > 3) { // Filter out short words
+          wordFrequency[word] = (wordFrequency[word] || 0) + 1
+          if (!topicSegments[word]) topicSegments[word] = []
+          topicSegments[word].push(segment.id)
+        }
+      })
+    })
+    
+    // Get top 5 most frequent words as topics
+    const sortedTopics = Object.entries(wordFrequency)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+    
+    return sortedTopics.map(([topic, frequency]) => ({
+      id: `topic-${topic}`,
+      name: topic,
+      frequency,
+      segments: topicSegments[topic] || [],
+      sentiment: 0 // Would be calculated based on segments
+    }))
+  }
+
+  // Y31: Real-time sentiment update
+  const updateRealTimeSentiment = (newSegment: TranscriptSegment) => {
+    if (newSegment.sentimentScore !== undefined) {
+      setRealTimeSentiment(prev => {
+        const newBySpeaker = { ...prev.bySpeaker }
+        newBySpeaker[newSegment.speaker] = newSegment.sentimentScore!
+        
+        const recentChanges = [...prev.recentChanges, {
+          timestamp: Date.now(),
+          speaker: newSegment.speaker,
+          sentiment: newSegment.sentimentScore!
+        }].slice(-10) // Keep last 10 changes
+        
+        const overall = Object.values(newBySpeaker).reduce((sum, score) => sum + score, 0) / Object.keys(newBySpeaker).length
+        
+        return {
+          overall,
+          bySpeaker: newBySpeaker,
+          recentChanges
+        }
+      })
+    }
   }
 
   return (
