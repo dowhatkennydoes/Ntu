@@ -123,40 +123,56 @@ export function TranscriptEditingWorkflow() {
     setSpeakers(prev => prev.filter(speaker => speaker.id !== fromId))
   }
 
-  const handleExport = () => {
+  const handleExport = (format: 'json' | 'txt' | 'csv' | 'docx' | 'pdf') => {
     try {
-      const exportData = {
-        speakers: speakers.map(s => ({ id: s.id, name: s.name })),
-        segments: transcriptSegments.map(segment => ({
-          speaker: speakers.find(s => s.id === segment.speaker)?.name || segment.speaker,
-          timestamp: formatTime(segment.timestamp),
-          text: segment.text,
-          confidence: segment.confidence
-        })),
-        metadata: {
-          exportedAt: new Date().toISOString(),
-          totalSegments: transcriptSegments.length,
-          duration: Math.max(...transcriptSegments.map(s => s.timestamp)) + 30
+      let blob: Blob, filename: string
+      if (format === 'json') {
+        const exportData = {
+          speakers: speakers.map(s => ({ id: s.id, name: s.name })),
+          segments: transcriptSegments.map(segment => ({
+            speaker: speakers.find(s => s.id === segment.speaker)?.name || segment.speaker,
+            timestamp: formatTime(segment.timestamp),
+            text: segment.text,
+            confidence: segment.confidence
+          })),
+          metadata: {
+            exportedAt: new Date().toISOString(),
+            totalSegments: transcriptSegments.length,
+            duration: Math.max(...transcriptSegments.map(s => s.timestamp)) + 30
+          }
         }
+        blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+        filename = 'transcript-edited.json'
+      } else if (format === 'txt') {
+        const txt = transcriptSegments.map(s => `${formatTime(s.timestamp)} [${speakers.find(sp => sp.id === s.speaker)?.name || s.speaker}]: ${s.text}`).join('\n')
+        blob = new Blob([txt], { type: 'text/plain' })
+        filename = 'transcript.txt'
+      } else if (format === 'csv') {
+        const csv = ['Timestamp,Speaker,Text,Confidence']
+        transcriptSegments.forEach(s => {
+          csv.push(`"${formatTime(s.timestamp)}","${speakers.find(sp => sp.id === s.speaker)?.name || s.speaker}","${s.text}",${s.confidence}`)
+        })
+        blob = new Blob([csv.join('\n')], { type: 'text/csv' })
+        filename = 'transcript.csv'
+      } else if (format === 'docx' || format === 'pdf') {
+        // Placeholder: just export as txt for now
+        const txt = transcriptSegments.map(s => `${formatTime(s.timestamp)} [${speakers.find(sp => sp.id === s.speaker)?.name || s.speaker}]: ${s.text}`).join('\n')
+        blob = new Blob([txt], { type: 'application/octet-stream' })
+        filename = `transcript.${format}`
+      } else {
+        throw new Error('Unsupported export format')
       }
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json'
-      })
+      
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'transcript-edited.json'
+      a.download = filename
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-
       setShowSuccessMessage(true)
-      setTimeout(() => {
-        setShowSuccessMessage(false)
-        nextStep()
-      }, 1500)
+      setTimeout(() => setShowSuccessMessage(false), 1500)
     } catch (error) {
       addError({
         id: 'export-error',
@@ -332,13 +348,21 @@ export function TranscriptEditingWorkflow() {
       )}
 
       {/* Export Controls */}
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => handleExport('json')} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Export JSON</button>
+        <button onClick={() => handleExport('txt')} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Export TXT</button>
+        <button onClick={() => handleExport('csv')} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Export CSV</button>
+        <button onClick={() => handleExport('docx')} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Export DOCX</button>
+        <button onClick={() => handleExport('pdf')} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Export PDF</button>
+      </div>
+      {showSuccessMessage && <div className="text-green-600 mb-2">Export successful!</div>}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">
           {transcriptSegments.length} segments • {speakers.length} speakers
         </div>
         
         <button
-          onClick={handleExport}
+          onClick={() => handleExport('json')}
           className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <CloudArrowDownIcon className="h-5 w-5 mr-2" />

@@ -178,6 +178,16 @@
   animation: scaleIn 0.2s ease-out;
 }
 
+.animate-fade-in-out {
+  animation: fadeInOut 2s;
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* Loading states */
 .loading {
   @apply animate-pulse bg-gray-200;

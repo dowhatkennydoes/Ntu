@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusIcon, DocumentTextIcon, MicrophoneIcon, VideoCameraIcon, BookOpenIcon, ExclamationTriangleIcon, LinkIcon, CloudArrowUpIcon, AcademicCapIcon, SpeakerWaveIcon, BeakerIcon, ChatBubbleLeftRightIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, DocumentTextIcon, MicrophoneIcon, VideoCameraIcon, BookOpenIcon, ExclamationTriangleIcon, LinkIcon, CloudArrowUpIcon, AcademicCapIcon, SpeakerWaveIcon, BeakerIcon, ChatBubbleLeftRightIcon, WrenchScrewdriverIcon, UserGroupIcon, DocumentArrowDownIcon, PuzzlePieceIcon, CpuChipIcon, ClockIcon } from '@heroicons/react/24/outline'
 import { useWorkflow } from './WorkflowProvider'
 import { WorkflowRunner } from './WorkflowRunner'
 import { ErrorDemoWorkflow } from './ErrorDemoWorkflow'
@@ -12,9 +12,20 @@ import { FlashcardCreationWorkflow } from './FlashcardCreationWorkflow'
 import { VoiceNoteWorkflow } from './VoiceNoteWorkflow'
 import { KnowledgeUploadWorkflow } from './KnowledgeUploadWorkflow'
 import { VoiceTranscriptionWorkflow } from './VoiceTranscriptionWorkflow'
-import { JunctionSemanticSearchWorkflow } from './JunctionSemanticSearchWorkflow'
-import { MereAIAssistantWorkflow } from './MereAIAssistantWorkflow'
+import JunctionSemanticSearchWorkflow from './JunctionSemanticSearchWorkflow'
 import { MarathonWorkflowBuilder } from './MarathonWorkflowBuilder'
+import TeamCollaborationWorkflow from './TeamCollaborationWorkflow'
+import ExportWorkflow from './ExportWorkflow'
+import PluginEcosystemWorkflow from './PluginEcosystemWorkflow'
+import AdvancedMemoryWorkflow from './AdvancedMemoryWorkflow'
+import MeetingIntegrationWorkflow from './MeetingIntegrationWorkflow'
+import ComplianceSecurityWorkflow from './ComplianceSecurityWorkflow'
+import VoiceIntelligenceWorkflow from './VoiceIntelligenceWorkflow'
+import JunctionAIWritingWorkflow from './JunctionAIWritingWorkflow'
+import MereAIAssistantWorkflow from './MereAIAssistantWorkflow'
+import MarathonFlowBuilderWorkflow from './MarathonFlowBuilderWorkflow'
+import MemoryIntelligenceWorkflow from './MemoryIntelligenceWorkflow'
+import PunctualTaskManagerWorkflow from './PunctualTaskManagerWorkflow'
 
 interface WorkflowCard {
   id: string
@@ -241,6 +252,198 @@ export function WorkflowDashboard() {
           title: 'Visual Workflow Builder',
           description: 'Create automation flows with drag-and-drop interface',
           component: <MarathonWorkflowBuilder />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'team-collaboration',
+      title: 'Team Collaboration',
+      description: 'Real-time collaboration, approval workflows, and team memory sharing',
+      icon: UserGroupIcon,
+      color: 'bg-green-500',
+      steps: [
+        {
+          id: 'team-workflow',
+          title: 'Team Collaboration Platform',
+          description: 'Collaborate in real-time with approval workflows and team digests',
+          component: <TeamCollaborationWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'export-workflow',
+      title: 'Export & Compliance',
+      description: 'Export content with privacy controls, compliance features, and multiple formats',
+      icon: DocumentArrowDownIcon,
+      color: 'bg-purple-500',
+      steps: [
+        {
+          id: 'export-workflow',
+          title: 'Export Platform',
+          description: 'Export with redaction, compliance, and multiple format support',
+          component: <ExportWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'plugin-ecosystem',
+      title: 'Plugin Ecosystem',
+      description: 'Extend Ntu with powerful plugins, integrations, and custom workflows',
+      icon: PuzzlePieceIcon,
+      color: 'bg-indigo-500',
+      steps: [
+        {
+          id: 'plugin-workflow',
+          title: 'Plugin Management',
+          description: 'Browse, install, configure, and manage plugins',
+          component: <PluginEcosystemWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'advanced-memory',
+      title: 'Advanced Memory Management',
+      description: 'Manage memory decay, forking, merging, and semantic linking',
+      icon: CpuChipIcon,
+      color: 'bg-purple-500',
+      steps: [
+        {
+          id: 'memory-workflow',
+          title: 'Memory Operations',
+          description: 'Advanced memory management with decay, forking, and merging',
+          component: <AdvancedMemoryWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'meeting-integration',
+      title: 'Meeting Integration',
+      description: 'Zoom/Google Meet integration, calendar sync, and auto-transcription',
+      icon: VideoCameraIcon,
+      color: 'bg-blue-500',
+      steps: [
+        {
+          id: 'meeting-workflow',
+          title: 'Meeting Management',
+          description: 'Integrate with Zoom, Google Meet, and calendar systems',
+          component: <MeetingIntegrationWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'compliance-security',
+      title: 'Compliance & Security',
+      description: 'Enterprise security, audit logging, and compliance monitoring',
+      icon: ExclamationTriangleIcon,
+      color: 'bg-red-500',
+      steps: [
+        {
+          id: 'security-workflow',
+          title: 'Security & Compliance',
+          description: 'Enterprise security features and compliance monitoring',
+          component: <ComplianceSecurityWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'voice-intelligence',
+      title: 'Voice Intelligence',
+      description: 'Advanced voice processing with Whisper models and real-time analytics',
+      icon: SpeakerWaveIcon,
+      color: 'bg-purple-500',
+      steps: [
+        {
+          id: 'voice-workflow',
+          title: 'Voice Intelligence Platform',
+          description: 'Advanced voice processing with AI insights and analytics',
+          component: <VoiceIntelligenceWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'junction-ai-writing',
+      title: 'Junction AI Writing',
+      description: 'AI-powered document creation, co-writing, and collaboration',
+      icon: DocumentTextIcon,
+      color: 'bg-indigo-500',
+      steps: [
+        {
+          id: 'junction-workflow',
+          title: 'AI Writing Platform',
+          description: 'AI co-writing, document Q&A, and collaboration features',
+          component: <JunctionAIWritingWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'mere-ai-assistant',
+      title: 'Mere AI Assistant',
+      description: 'Intelligent AI assistant with memory awareness and app integration',
+      icon: ChatBubbleLeftRightIcon,
+      color: 'bg-blue-500',
+      steps: [
+        {
+          id: 'mere-workflow',
+          title: 'AI Assistant Platform',
+          description: 'Memory-aware AI chat with app integration and permissions',
+          component: <MereAIAssistantWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'marathon-flow-builder',
+      title: 'Marathon Flow Builder',
+      description: 'Advanced workflow automation with version control and audit trails',
+      icon: WrenchScrewdriverIcon,
+      color: 'bg-indigo-500',
+      steps: [
+        {
+          id: 'marathon-workflow',
+          title: 'Flow Builder Platform',
+          description: 'Visual workflow automation with compliance and audit features',
+          component: <MarathonFlowBuilderWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'memory-intelligence',
+      title: 'Memory Intelligence',
+      description: 'Advanced memory management with AI analysis and health monitoring',
+      icon: CpuChipIcon,
+      color: 'bg-purple-500',
+      steps: [
+        {
+          id: 'memory-workflow',
+          title: 'Memory Intelligence Platform',
+          description: 'AI-powered memory analysis, health monitoring, and semantic linking',
+          component: <MemoryIntelligenceWorkflow />,
+          aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'punctual-task-manager',
+      title: 'Punctual Task Manager',
+      description: 'Advanced task management with time tracking and productivity analytics',
+      icon: ClockIcon,
+      color: 'bg-orange-500',
+      steps: [
+        {
+          id: 'punctual-workflow',
+          title: 'Task Management Platform',
+          description: 'Time tracking, productivity analytics, and smart scheduling',
+          component: <PunctualTaskManagerWorkflow />,
           aiAssisted: true,
         },
       ],

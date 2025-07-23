@@ -62,6 +62,10 @@ export function VoiceNoteWorkflow() {
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Add state for engine selection and error
+  const [transcriptionEngine, setTranscriptionEngine] = useState<'whisper-local' | 'cloud' | null>(null)
+  const [engineError, setEngineError] = useState<string | null>(null)
+
   // Cleanup function
   useEffect(() => {
     return () => {
@@ -270,6 +274,47 @@ Speaker 2: I believe it's the combination of our new UI updates and the enhanced
 
   const canProceed = voiceNote.audioUrl || voiceNote.transcript
 
+  // Add handlers for Whisper and Cloud transcription
+  const handleCloudTranscription = async () => {
+    setTranscriptionEngine('cloud')
+    setIsTranscribing(true)
+    setEngineError(null)
+    try {
+      // Simulate cloud processing (slightly slower)
+      await new Promise(resolve => setTimeout(resolve, 4000))
+      await transcribeAudio()
+      setTranscriptionEngine('cloud')
+    } catch (err) {
+      setEngineError('Cloud transcription failed. Please try again.')
+      setIsTranscribing(false)
+      setTranscriptionEngine(null)
+    }
+  }
+
+  const handleWhisperTranscription = async () => {
+    setTranscriptionEngine('whisper-local')
+    setIsTranscribing(true)
+    setEngineError(null)
+    try {
+      // Simulate Whisper processing time (Y14: within 30s for 10-min file)
+      const simulatedProcessingTime = Math.min(voiceNote.duration * 0.3, 30000)
+      await new Promise(resolve => setTimeout(resolve, simulatedProcessingTime))
+      // Simulate success/failure
+      if (Math.random() < 0.85) { // 85% success rate
+        // Use the existing mock transcript logic
+        await transcribeAudio()
+        setTranscriptionEngine('whisper-local')
+      } else {
+        throw new Error('Whisper failed to process audio locally.')
+      }
+    } catch (err) {
+      setEngineError('Whisper local transcription failed. Falling back to cloud...')
+      setIsTranscribing(false)
+      setTranscriptionEngine(null)
+      handleCloudTranscription()
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Progress Steps */}
@@ -403,6 +448,33 @@ Speaker 2: I believe it's the combination of our new UI updates and the enhanced
                 <div className="text-gray-600">
                   Convert your recording to text with AI-powered transcription and speaker detection.
                 </div>
+                
+                {currentStep === 'transcribe' && !isTranscribing && !voiceNote.transcript && (
+                  <div className="flex gap-4 mb-4">
+                    <button
+                      className="px-4 py-2 bg-purple-700 text-white rounded hover:bg-purple-800"
+                      onClick={handleWhisperTranscription}
+                      disabled={isTranscribing}
+                    >
+                      Transcribe with Whisper (Local)
+                    </button>
+                    <button
+                      className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
+                      onClick={handleCloudTranscription}
+                      disabled={isTranscribing}
+                    >
+                      Transcribe with Cloud
+                    </button>
+                  </div>
+                )}
+                {isTranscribing && (
+                  <div className="mb-2 text-sm text-gray-700">
+                    {transcriptionEngine === 'whisper-local' ? 'Running Whisper model locally...' : 'Running cloud transcription...'}
+                  </div>
+                )}
+                {engineError && (
+                  <div className="mb-2 text-sm text-red-600">{engineError}</div>
+                )}
                 
                 <button
                   onClick={transcribeAudio}

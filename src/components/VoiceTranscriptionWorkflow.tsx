@@ -15,6 +15,7 @@ import {
   CloudArrowUpIcon
 } from '@heroicons/react/24/outline'
 import { useWorkflow } from './WorkflowProvider'
+import { Memory } from '@/types/memory'
 
 interface TranscriptSegment {
   id: string
@@ -127,6 +128,164 @@ export function VoiceTranscriptionWorkflow() {
     sentiment: number
   }>>([])
   
+  // Add missing state variables here
+  const [showMemorySave, setShowMemorySave] = useState(false)
+  const [memorySaved, setMemorySaved] = useState(false)
+  const [meetingSummary, setMeetingSummary] = useState<string>('')
+  const [punctualSync, setPunctualSync] = useState(false)
+  const [autoTranscribeMeetings, setAutoTranscribeMeetings] = useState(false)
+
+  // Add memory template and auto-tagging state
+  const [selectedMemoryTemplate, setSelectedMemoryTemplate] = useState<string>('meeting')
+  const [autoTags, setAutoTags] = useState<string[]>([])
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false)
+
+  // Add collaboration state
+  const [collaborators, setCollaborators] = useState<Array<{
+    id: string
+    name: string
+    color: string
+    isOnline: boolean
+    lastSeen: Date
+  }>>([
+    { id: 'user1', name: 'You', color: 'bg-blue-500', isOnline: true, lastSeen: new Date() },
+    { id: 'user2', name: 'John Doe', color: 'bg-green-500', isOnline: true, lastSeen: new Date() },
+    { id: 'user3', name: 'Jane Smith', color: 'bg-purple-500', isOnline: false, lastSeen: new Date(Date.now() - 300000) }
+  ])
+
+  const [comments, setComments] = useState<Array<{
+    id: string
+    segmentId: string
+    author: string
+    text: string
+    timestamp: number
+    resolved: boolean
+    replies: Array<{
+      id: string
+      author: string
+      text: string
+      timestamp: number
+    }>
+  }>>([])
+
+  const [showCollaboration, setShowCollaboration] = useState(false)
+  const [newComment, setNewComment] = useState('')
+  const [selectedSegmentForComment, setSelectedSegmentForComment] = useState<string | null>(null)
+
+  // Add comment to a segment
+  const addComment = (segmentId: string, text: string) => {
+    if (!text.trim()) return
+    
+    const comment = {
+      id: `comment-${Date.now()}`,
+      segmentId,
+      author: 'You',
+      text: text.trim(),
+      timestamp: Date.now(),
+      resolved: false,
+      replies: []
+    }
+    
+    setComments(prev => [...prev, comment])
+    setNewComment('')
+    setSelectedSegmentForComment(null)
+  }
+
+  // Resolve a comment
+  const resolveComment = (commentId: string) => {
+    setComments(prev => prev.map(comment => 
+      comment.id === commentId ? { ...comment, resolved: true } : comment
+    ))
+  }
+
+  // Add reply to a comment
+  const addReply = (commentId: string, text: string) => {
+    if (!text.trim()) return
+    
+    const reply = {
+      id: `reply-${Date.now()}`,
+      author: 'You',
+      text: text.trim(),
+      timestamp: Date.now()
+    }
+    
+    setComments(prev => prev.map(comment => 
+      comment.id === commentId 
+        ? { ...comment, replies: [...comment.replies, reply] }
+        : comment
+    ))
+  }
+
+  // Memory templates (Y60)
+  const memoryTemplates = [
+    {
+      id: 'meeting',
+      name: 'Meeting',
+      description: 'Standard meeting with agenda, discussion, and action items',
+      tags: ['meeting', 'agenda', 'action-items'],
+      sections: ['Overview', 'Participants', 'Discussion Points', 'Decisions', 'Action Items']
+    },
+    {
+      id: 'lecture',
+      name: 'Lecture',
+      description: 'Educational content with key concepts and examples',
+      tags: ['lecture', 'education', 'learning'],
+      sections: ['Topic', 'Key Concepts', 'Examples', 'Questions', 'Summary']
+    },
+    {
+      id: 'demo',
+      name: 'Demo',
+      description: 'Product demonstration or technical walkthrough',
+      tags: ['demo', 'product', 'technical'],
+      sections: ['Product', 'Features', 'Use Cases', 'Feedback', 'Next Steps']
+    },
+    {
+      id: 'interview',
+      name: 'Interview',
+      description: 'Interview or conversation with structured Q&A',
+      tags: ['interview', 'conversation', 'qa'],
+      sections: ['Participants', 'Questions', 'Answers', 'Insights', 'Follow-up']
+    }
+  ]
+
+  // Auto-tagging function (Y61)
+  const generateAutoTags = (segments: TranscriptSegment[], speakers: Speaker[], topics: string[]) => {
+    const tags: string[] = []
+    
+    // Add speaker names as tags
+    speakers.forEach(speaker => {
+      if (speaker.segments > 0) {
+        tags.push(speaker.name.toLowerCase().replace(/\s+/g, '-'))
+      }
+    })
+    
+    // Add detected topics
+    topics.forEach(topic => {
+      if (topic.length > 3) {
+        tags.push(topic)
+      }
+    })
+    
+    // Add content-based tags
+    const allText = segments.map(s => s.text).join(' ').toLowerCase()
+    
+    if (allText.includes('meeting') || allText.includes('discussion')) tags.push('meeting')
+    if (allText.includes('project') || allText.includes('planning')) tags.push('project')
+    if (allText.includes('review') || allText.includes('analysis')) tags.push('review')
+    if (allText.includes('decision') || allText.includes('vote')) tags.push('decision')
+    if (allText.includes('deadline') || allText.includes('timeline')) tags.push('timeline')
+    if (allText.includes('budget') || allText.includes('cost')) tags.push('budget')
+    if (allText.includes('team') || allText.includes('collaboration')) tags.push('team')
+    
+    // Add sentiment-based tags
+    const avgSentiment = segments.reduce((sum, s) => sum + (s.sentimentScore || 0), 0) / segments.length
+    if (avgSentiment > 0.1) tags.push('positive')
+    else if (avgSentiment < -0.1) tags.push('negative')
+    else tags.push('neutral')
+    
+    return Array.from(new Set(tags)) // Remove duplicates
+  }
+
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -677,10 +836,44 @@ export function VoiceTranscriptionWorkflow() {
     return Math.min(1, urgentCount / 10) // Normalize to 0-1
   }
 
-  // Y58: Action item detection
-  const detectActionItems = (text: string): boolean => {
-    const actionPhrases = ['we need to', 'we should', 'we must', 'action item', 'todo', 'to do', 'follow up', 'next steps', 'assign', 'responsible']
-    return actionPhrases.some(phrase => text.toLowerCase().includes(phrase))
+  // Enhanced action item detection (Y58)
+  const detectActionItems = (segments: TranscriptSegment[]) => {
+    const actionPhrases = [
+      'need to', 'should', 'will', 'going to', 'plan to', 'have to', 'must',
+      'action item', 'todo', 'task', 'follow up', 'next steps', 'deadline',
+      'assign', 'responsible', 'owner', 'due date', 'by when'
+    ]
+    
+    const detectedItems: Array<{
+      id: string
+      text: string
+      speaker: string
+      timestamp: number
+      assignedTo?: string
+      priority: 'low' | 'medium' | 'high'
+    }> = []
+    
+    segments.forEach(segment => {
+      const text = segment.text.toLowerCase()
+      const hasActionPhrase = actionPhrases.some(phrase => text.includes(phrase))
+      
+      if (hasActionPhrase) {
+        // Determine priority based on urgency words
+        const urgencyWords = ['urgent', 'asap', 'critical', 'immediately', 'emergency']
+        const priority = urgencyWords.some(word => text.includes(word)) ? 'high' : 
+                        text.includes('important') ? 'medium' : 'low'
+        
+        detectedItems.push({
+          id: `action-${Date.now()}-${Math.random()}`,
+          text: segment.text,
+          speaker: segment.speaker,
+          timestamp: segment.startTime,
+          priority
+        })
+      }
+    })
+    
+    return detectedItems
   }
 
   // Y123: Question detection
@@ -790,39 +983,358 @@ export function VoiceTranscriptionWorkflow() {
     }
   }
 
+  // Add state for engine selection and error
+  const [transcriptionEngine, setTranscriptionEngine] = useState<'whisper-local' | 'cloud' | null>(null)
+  const [engineError, setEngineError] = useState<string | null>(null)
+
+  // Add a button to trigger Whisper local transcription
+  {isRecording && !isProcessing && (
+    <div className="flex gap-4 mt-4">
+      <button
+        className="px-4 py-2 bg-purple-700 text-white rounded hover:bg-purple-800"
+        onClick={() => handleWhisperTranscription()}
+        disabled={isProcessing}
+      >
+        Transcribe with Whisper (Local)
+      </button>
+      <button
+        className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
+        onClick={() => handleCloudTranscription()}
+        disabled={isProcessing}
+      >
+        Transcribe with Cloud
+      </button>
+    </div>
+  )}
+
+  {isProcessing && (
+    <div className="mt-2 text-sm text-gray-700">
+      {processingStatus} (Engine: {transcriptionEngine || 'N/A'})
+    </div>
+  )}
+  {engineError && (
+    <div className="mt-2 text-sm text-red-600">{engineError}</div>
+  )}
+
+  // Add handlers for Whisper and Cloud transcription
+  const handleCloudTranscription = async () => {
+    setTranscriptionEngine('cloud')
+    setProcessingStatus('Running cloud transcription...')
+    setIsProcessing(true)
+    setEngineError(null)
+    try {
+      // Simulate cloud processing (slightly slower)
+      await new Promise(resolve => setTimeout(resolve, 4000))
+      setProcessingStatus('Cloud transcription complete!')
+      setIsProcessing(false)
+      setTranscriptionEngine('cloud')
+      handleAutoSave()
+    } catch (err) {
+      setEngineError('Cloud transcription failed. Please try again.')
+      setIsProcessing(false)
+      setTranscriptionEngine(null)
+    }
+  }
+
+  const handleWhisperTranscription = async () => {
+    setTranscriptionEngine('whisper-local')
+    setProcessingStatus('Running Whisper model locally...')
+    setIsProcessing(true)
+    setEngineError(null)
+    try {
+      // Simulate Whisper processing time (Y14: within 30s for 10-min file)
+      const simulatedProcessingTime = Math.min(duration * 0.3, 30000)
+      await new Promise(resolve => setTimeout(resolve, simulatedProcessingTime))
+      // Simulate success/failure
+      if (Math.random() < 0.85) { // 85% success rate
+        setProcessingStatus('Transcription complete!')
+        setIsProcessing(false)
+        setTranscriptionEngine('whisper-local')
+        handleAutoSave()
+      } else {
+        throw new Error('Whisper failed to process audio locally.')
+      }
+    } catch (err) {
+      setEngineError('Whisper local transcription failed. Falling back to cloud...')
+      setIsProcessing(false)
+      setTranscriptionEngine(null)
+      handleCloudTranscription()
+    }
+  }
+
+  // Add comprehensive meeting summary generation (Y116)
+  const generateMeetingSummary = (segments: TranscriptSegment[], speakers: Speaker[], actionItems: Array<{
+    id: string
+    text: string
+    speaker: string
+    timestamp: number
+    assignedTo?: string
+    priority: 'low' | 'medium' | 'high'
+  }>) => {
+    const totalDuration = Math.max(...segments.map(s => s.endTime))
+    const speakerStats = speakers.map(s => ({
+      name: s.name,
+      segments: s.segments,
+      totalDuration: s.totalDuration,
+      percentage: (s.totalDuration / totalDuration) * 100
+    }))
+    
+    const keyTopics = extractKeyTopics(segments)
+    const sentiment = calculateOverallSentiment(segments)
+    
+    return {
+      overview: `Meeting lasted ${formatTime(totalDuration)} with ${speakers.length} participants.`,
+      keyPoints: keyTopics.slice(0, 5),
+      actionItems: actionItems.length,
+      speakerParticipation: speakerStats,
+      sentiment: sentiment,
+      nextSteps: actionItems.map((item: { text: string }) => item.text).slice(0, 3)
+    }
+  }
+
+  const extractKeyTopics = (segments: TranscriptSegment[]) => {
+    // Simple keyword extraction (in production, use NLP)
+    const words = segments.flatMap(s => s.text.toLowerCase().split(/\s+/))
+    const wordCount = words.reduce((acc, word) => {
+      acc[word] = (acc[word] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    return Object.entries(wordCount)
+      .filter(([word, count]) => count > 2 && word.length > 3)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([word]) => word)
+  }
+
+  const calculateOverallSentiment = (segments: TranscriptSegment[]) => {
+    const sentiments = segments.map(s => s.sentimentScore || 0)
+    const average = sentiments.reduce((sum, s) => sum + s, 0) / sentiments.length
+    return average > 0.1 ? 'positive' : average < -0.1 ? 'negative' : 'neutral'
+  }
+
+  // After transcription complete, generate summary and show save options
+  useEffect(() => {
+    if (!isProcessing && transcriptSegments.length > 0 && processingStatus.includes('complete')) {
+      const detectedActions = detectActionItems(transcriptSegments)
+      setActionItems(detectedActions)
+      
+      const summary = generateMeetingSummary(transcriptSegments, speakers, detectedActions)
+      setMeetingSummary(JSON.stringify(summary, null, 2))
+      
+      // Generate auto-tags
+      const topics = extractKeyTopics(transcriptSegments)
+      const tags = generateAutoTags(transcriptSegments, speakers, topics)
+      setAutoTags(tags)
+      
+      // Find related notebooks
+      findRelatedNotebooks()
+      
+      setShowMemorySave(true)
+      setShowTemplateSelector(true)
+      
+      // Send action items to Punctual
+      if (detectedActions.length > 0 && !punctualSync) {
+        sendActionItemsToPunctual(detectedActions)
+        setPunctualSync(true)
+      }
+    }
+  }, [isProcessing, transcriptSegments, processingStatus, punctualSync, speakers])
+
+  const sendActionItemsToPunctual = (items: typeof actionItems) => {
+    // Placeholder: simulate sending to Punctual
+    setTimeout(() => {
+      // Success
+    }, 1000)
+  }
+
+  // Update handleSaveMemory to use template and auto-tags
+  const handleSaveMemory = () => {
+    const template = memoryTemplates.find(t => t.id === selectedMemoryTemplate)
+    const memory: Memory = {
+      id: `memory-${Date.now()}`,
+      title: `${template?.name || 'Meeting'} Transcript`,
+      content: transcriptSegments.map(s => s.text).join(' '),
+      summary: meetingSummary,
+      tags: [...autoTags, ...(template?.tags || [])],
+      category: selectedMemoryTemplate as any,
+      source: 'transcription',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      confidence: 0.9,
+      relatedMemories: [],
+      metadata: {
+        keywords: extractKeyTopics(transcriptSegments),
+        language: 'en',
+        transcriptionConfidence: 0.9,
+        participants: speakers.map(s => s.name)
+      },
+      status: 'active'
+    }
+    setMemorySaved(true)
+    setShowMemorySave(false)
+    setShowTemplateSelector(false)
+  }
+
+  // Add additional features state
+  const [showFlashcardCreation, setShowFlashcardCreation] = useState(false)
+  const [showTranscriptForking, setShowTranscriptForking] = useState(false)
+  const [showMemoryDecay, setShowMemoryDecay] = useState(false)
+  const [showCourseConversion, setShowCourseConversion] = useState(false)
+  const [selectedQuotes, setSelectedQuotes] = useState<string[]>([])
+  const [memoryDecayDays, setMemoryDecayDays] = useState(30)
+  const [forkedTranscripts, setForkedTranscripts] = useState<Array<{
+    id: string
+    name: string
+    segments: TranscriptSegment[]
+    createdAt: Date
+  }>>([])
+
+  // Create flashcards from selected quotes (Y62)
+  const createFlashcardsFromQuotes = () => {
+    const flashcards = selectedQuotes.map((quote, index) => ({
+      id: `flashcard-${Date.now()}-${index}`,
+      front: `Quote from meeting: "${quote.substring(0, 100)}..."`,
+      back: quote,
+      category: 'meeting',
+      difficulty: 'medium' as const,
+      tags: ['meeting', 'quote', 'auto-generated'],
+      hint: 'Think about the context and speaker'
+    }))
+    
+    // In a real implementation, this would save to the flashcard system
+    console.log('Created flashcards:', flashcards)
+    setShowFlashcardCreation(false)
+    setSelectedQuotes([])
+  }
+
+  // Fork transcript into multiple summaries (Y65)
+  const forkTranscript = (name: string, segments: TranscriptSegment[]) => {
+    const forkedTranscript = {
+      id: `fork-${Date.now()}`,
+      name,
+      segments,
+      createdAt: new Date()
+    }
+    
+    setForkedTranscripts(prev => [...prev, forkedTranscript])
+    setShowTranscriptForking(false)
+  }
+
+  // Set memory decay threshold (Y64)
+  const setMemoryDecay = (days: number) => {
+    setMemoryDecayDays(days)
+    setShowMemoryDecay(false)
+    // In a real implementation, this would update the memory metadata
+    console.log(`Memory will decay after ${days} days`)
+  }
+
+  // Convert transcript to course (Y69)
+  const convertToCourse = () => {
+    const courseStructure = {
+      title: 'Course from Meeting Transcript',
+      modules: [
+        {
+          title: 'Introduction',
+          content: transcriptSegments.slice(0, 3).map(s => s.text).join(' ')
+        },
+        {
+          title: 'Key Concepts',
+          content: extractKeyTopics(transcriptSegments).join(', ')
+        },
+        {
+          title: 'Action Items',
+          content: actionItems.map(item => item.text).join('\n')
+        }
+      ]
+    }
+    
+    console.log('Created course:', courseStructure)
+    setShowCourseConversion(false)
+  }
+
+  // Select quote for flashcard creation
+  const selectQuote = (quote: string) => {
+    setSelectedQuotes(prev => 
+      prev.includes(quote) 
+        ? prev.filter(q => q !== quote)
+        : [...prev, quote]
+    )
+  }
+
+  // Add auto-linking state
+  const [relatedNotebooks, setRelatedNotebooks] = useState<Array<{
+    id: string
+    title: string
+    relevance: number
+    sections: Array<{
+      id: string
+      title: string
+      content: string
+    }>
+  }>>([])
+  const [showAutoLinking, setShowAutoLinking] = useState(false)
+
+  // Auto-linking to related Notebook sections (Y63)
+  const findRelatedNotebooks = () => {
+    // Simulate finding related notebooks based on topics and keywords
+    const topics = extractKeyTopics(transcriptSegments)
+    const mockRelatedNotebooks = [
+      {
+        id: 'notebook-1',
+        title: 'Project Planning Guidelines',
+        relevance: 0.85,
+        sections: [
+          { id: 'section-1', title: 'Meeting Best Practices', content: 'Guidelines for effective meetings...' },
+          { id: 'section-2', title: 'Action Item Tracking', content: 'How to track and follow up on action items...' }
+        ]
+      },
+      {
+        id: 'notebook-2',
+        title: 'Technical Architecture',
+        relevance: 0.72,
+        sections: [
+          { id: 'section-3', title: 'API Integration', content: 'Technical details about API integration...' },
+          { id: 'section-4', title: 'System Design', content: 'System architecture and design patterns...' }
+        ]
+      }
+    ]
+    
+    setRelatedNotebooks(mockRelatedNotebooks)
+    setShowAutoLinking(true)
+  }
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
           Voice Transcription
         </h2>
         <p className="text-gray-600">
-          Record live audio or upload files for real-time AI transcription with Whisper
+          Record, transcribe, and analyze voice content with AI-powered insights
         </p>
       </div>
 
-      {/* Status Bar */}
+      {/* Auto-transcribe meetings toggle */}
       <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <SignalIcon className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-medium">
-                {isRecording ? 'Live Recording' : isProcessing ? 'Processing' : 'Ready'}
-              </span>
-            </div>
-            
-            {processingStatus && (
-              <span className="text-sm text-gray-600">{processingStatus}</span>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <span>Auto-saved: {formatTime(Math.floor((Date.now() - lastSaveTime.getTime()) / 1000))} ago</span>
-            <span>Confidence: {Math.floor(confidenceThreshold * 100)}%+</span>
-          </div>
+        <div className="flex items-center gap-2 mb-2">
+          <input 
+            type="checkbox" 
+            id="auto-transcribe" 
+            checked={autoTranscribeMeetings} 
+            onChange={e => setAutoTranscribeMeetings(e.target.checked)} 
+            className="rounded"
+          />
+          <label htmlFor="auto-transcribe" className="text-sm font-medium">
+            Auto-transcribe upcoming calendar meetings
+          </label>
         </div>
+        {autoTranscribeMeetings && (
+          <div className="text-blue-700 text-sm">
+            Upcoming meetings will be auto-transcribed and appear here after completion. (Simulated)
+          </div>
+        )}
       </div>
 
       {/* Recording Controls */}
@@ -1181,6 +1693,411 @@ export function VoiceTranscriptionWorkflow() {
           Complete Transcription
         </button>
       </div>
+
+      {/* After transcription, show summary and save as memory UI */}
+      {showMemorySave && (
+        <div className="mt-4 space-y-4">
+          {/* Memory Template Selector */}
+          {showTemplateSelector && (
+            <div className="p-4 bg-purple-50 rounded">
+              <div className="font-semibold mb-2">Memory Template:</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                {memoryTemplates.map(template => (
+                  <button
+                    key={template.id}
+                    onClick={() => setSelectedMemoryTemplate(template.id)}
+                    className={`p-2 rounded text-sm text-left ${
+                      selectedMemoryTemplate === template.id
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white border hover:bg-purple-100'
+                    }`}
+                  >
+                    <div className="font-medium">{template.name}</div>
+                    <div className="text-xs opacity-75">{template.description}</div>
+                  </button>
+                ))}
+              </div>
+              
+              {/* Auto-generated Tags */}
+              <div className="font-semibold mb-2">Auto-generated Tags:</div>
+              <div className="flex flex-wrap gap-1 mb-3">
+                {autoTags.map(tag => (
+                  <span key={tag} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Meeting Summary */}
+          <div className="p-4 bg-blue-50 rounded">
+            <div className="font-semibold mb-2">Meeting Summary:</div>
+            <pre className="text-sm whitespace-pre-wrap">{meetingSummary}</pre>
+            <button onClick={handleSaveMemory} className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+              Save as Memory
+            </button>
+          </div>
+
+          {/* Speaker Analytics */}
+          <div className="p-4 bg-gray-50 rounded">
+            <div className="font-semibold mb-2">Speaker Analytics:</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {speakers.map(speaker => {
+                const speakerActions = actionItems.filter(item => item.speaker === speaker.id)
+                const totalDuration = Math.max(...transcriptSegments.map(s => s.endTime))
+                const percentage = totalDuration > 0 ? (speaker.totalDuration / totalDuration) * 100 : 0
+                
+                return (
+                  <div key={speaker.id} className="p-3 bg-white rounded border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`w-3 h-3 rounded-full ${speaker.color}`}></div>
+                      <span className="font-medium">{speaker.name}</span>
+                    </div>
+                    <div className="text-sm space-y-1">
+                      <div>Talk time: {formatTime(speaker.totalDuration)} ({percentage.toFixed(1)}%)</div>
+                      <div>Segments: {speaker.segments}</div>
+                      <div>Action items: {speakerActions.length}</div>
+                      <div>Confidence: {(speaker.averageConfidence * 100).toFixed(1)}%</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Action Items */}
+          {actionItems.length > 0 && (
+            <div className="p-4 bg-yellow-50 rounded">
+              <div className="font-semibold mb-2">Action Items ({actionItems.length}):</div>
+              <div className="space-y-2">
+                {actionItems.map(item => (
+                  <div key={item.id} className="p-2 bg-white rounded border-l-4 border-yellow-400">
+                    <div className="text-sm">{item.text}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {speakers.find(s => s.id === item.speaker)?.name} • {formatTime(item.timestamp)} • {item.priority} priority
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Collaboration Panel */}
+          <div className="p-4 bg-indigo-50 rounded">
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-semibold">Collaboration</div>
+              <button
+                onClick={() => setShowCollaboration(!showCollaboration)}
+                className="text-sm text-indigo-600 hover:text-indigo-800"
+              >
+                {showCollaboration ? 'Hide' : 'Show'} Collaboration
+              </button>
+            </div>
+            
+            {showCollaboration && (
+              <div className="space-y-4">
+                {/* Collaborators */}
+                <div>
+                  <div className="font-medium mb-2">Collaborators:</div>
+                  <div className="flex gap-2">
+                    {collaborators.map(collaborator => (
+                      <div key={collaborator.id} className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${collaborator.color} ${collaborator.isOnline ? 'animate-pulse' : ''}`}></div>
+                        <span className="text-sm">{collaborator.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Comments */}
+                <div>
+                  <div className="font-medium mb-2">Comments ({comments.length}):</div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {comments.map(comment => {
+                      const segment = transcriptSegments.find(s => s.id === comment.segmentId)
+                      return (
+                        <div key={comment.id} className={`p-2 bg-white rounded border ${comment.resolved ? 'opacity-60' : ''}`}>
+                          <div className="text-xs text-gray-500 mb-1">
+                            {comment.author} on "{segment?.text?.substring(0, 50)}..."
+                          </div>
+                          <div className="text-sm">{comment.text}</div>
+                          {!comment.resolved && (
+                            <button
+                              onClick={() => resolveComment(comment.id)}
+                              className="text-xs text-green-600 hover:text-green-800 mt-1"
+                            >
+                              Resolve
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Add Comment */}
+                <div>
+                  <div className="font-medium mb-2">Add Comment:</div>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedSegmentForComment || ''}
+                      onChange={(e) => setSelectedSegmentForComment(e.target.value)}
+                      className="flex-1 p-2 border rounded text-sm"
+                    >
+                      <option value="">Select segment...</option>
+                      {transcriptSegments.map(segment => (
+                        <option key={segment.id} value={segment.id}>
+                          {segment.text.substring(0, 50)}...
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add comment..."
+                      className="flex-1 p-2 border rounded text-sm"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && selectedSegmentForComment) {
+                          addComment(selectedSegmentForComment, newComment)
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => selectedSegmentForComment && addComment(selectedSegmentForComment, newComment)}
+                      disabled={!selectedSegmentForComment || !newComment.trim()}
+                      className="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {memorySaved && <div className="mt-2 text-green-600">Meeting transcript saved to Memory!</div>}
+      {punctualSync && <div className="mt-2 text-blue-600">Action items sent to Punctual!</div>}
+
+      {/* Additional Features */}
+      {showMemorySave && (
+        <div className="mt-4 space-y-4">
+          {/* Flashcard Creation from Quotes */}
+          <div className="p-4 bg-green-50 rounded">
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-semibold">Create Flashcards from Quotes</div>
+              <button
+                onClick={() => setShowFlashcardCreation(!showFlashcardCreation)}
+                className="text-sm text-green-600 hover:text-green-800"
+              >
+                {showFlashcardCreation ? 'Hide' : 'Show'} Flashcard Creation
+              </button>
+            </div>
+            
+            {showFlashcardCreation && (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 mb-2">Select quotes to create flashcards:</div>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {transcriptSegments.slice(0, 10).map(segment => (
+                    <label key={segment.id} className="flex items-start gap-2 p-2 bg-white rounded border cursor-pointer hover:bg-green-50">
+                      <input
+                        type="checkbox"
+                        checked={selectedQuotes.includes(segment.text)}
+                        onChange={() => selectQuote(segment.text)}
+                        className="mt-1"
+                      />
+                      <div className="text-sm">
+                        <div className="font-medium">{speakers.find(s => s.id === segment.speaker)?.name}</div>
+                        <div className="text-gray-600">{segment.text}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                {selectedQuotes.length > 0 && (
+                  <button
+                    onClick={createFlashcardsFromQuotes}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Create {selectedQuotes.length} Flashcards
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Transcript Forking */}
+          <div className="p-4 bg-orange-50 rounded">
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-semibold">Fork Transcript</div>
+              <button
+                onClick={() => setShowTranscriptForking(!showTranscriptForking)}
+                className="text-sm text-orange-600 hover:text-orange-800"
+              >
+                {showTranscriptForking ? 'Hide' : 'Show'} Forking
+              </button>
+            </div>
+            
+            {showTranscriptForking && (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 mb-2">Create separate summaries from this transcript:</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <button
+                    onClick={() => forkTranscript('Key Decisions', transcriptSegments.filter(s => s.text.toLowerCase().includes('decision')))}
+                    className="p-3 bg-white rounded border hover:bg-orange-50 text-left"
+                  >
+                    <div className="font-medium">Key Decisions</div>
+                    <div className="text-sm text-gray-600">Extract decision points</div>
+                  </button>
+                  <button
+                    onClick={() => forkTranscript('Action Items', transcriptSegments.filter(s => actionItems.some(a => a.text.includes(s.text))))}
+                    className="p-3 bg-white rounded border hover:bg-orange-50 text-left"
+                  >
+                    <div className="font-medium">Action Items</div>
+                    <div className="text-sm text-gray-600">Extract tasks and follow-ups</div>
+                  </button>
+                  <button
+                    onClick={() => forkTranscript('Technical Discussion', transcriptSegments.filter(s => s.text.toLowerCase().includes('technical') || s.text.toLowerCase().includes('api')))}
+                    className="p-3 bg-white rounded border hover:bg-orange-50 text-left"
+                  >
+                    <div className="font-medium">Technical Discussion</div>
+                    <div className="text-sm text-gray-600">Extract technical content</div>
+                  </button>
+                  <button
+                    onClick={() => forkTranscript('Questions & Answers', transcriptSegments.filter(s => s.text.includes('?')))}
+                    className="p-3 bg-white rounded border hover:bg-orange-50 text-left"
+                  >
+                    <div className="font-medium">Q&A</div>
+                    <div className="text-sm text-gray-600">Extract questions and answers</div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Memory Decay Settings */}
+          <div className="p-4 bg-red-50 rounded">
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-semibold">Memory Decay Settings</div>
+              <button
+                onClick={() => setShowMemoryDecay(!showMemoryDecay)}
+                className="text-sm text-red-600 hover:text-red-800"
+              >
+                {showMemoryDecay ? 'Hide' : 'Show'} Decay Settings
+              </button>
+            </div>
+            
+            {showMemoryDecay && (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 mb-2">Set when this transcript should decay from memory:</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setMemoryDecay(7)}
+                    className={`p-3 rounded border ${memoryDecayDays === 7 ? 'bg-red-600 text-white' : 'bg-white hover:bg-red-50'}`}
+                  >
+                    <div className="font-medium">7 days</div>
+                    <div className="text-xs">Short-term</div>
+                  </button>
+                  <button
+                    onClick={() => setMemoryDecay(30)}
+                    className={`p-3 rounded border ${memoryDecayDays === 30 ? 'bg-red-600 text-white' : 'bg-white hover:bg-red-50'}`}
+                  >
+                    <div className="font-medium">30 days</div>
+                    <div className="text-xs">Medium-term</div>
+                  </button>
+                  <button
+                    onClick={() => setMemoryDecay(90)}
+                    className={`p-3 rounded border ${memoryDecayDays === 90 ? 'bg-red-600 text-white' : 'bg-white hover:bg-red-50'}`}
+                  >
+                    <div className="font-medium">90 days</div>
+                    <div className="text-xs">Long-term</div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Course Conversion */}
+          <div className="p-4 bg-purple-50 rounded">
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-semibold">Convert to Course</div>
+              <button
+                onClick={() => setShowCourseConversion(!showCourseConversion)}
+                className="text-sm text-purple-600 hover:text-purple-800"
+              >
+                {showCourseConversion ? 'Hide' : 'Show'} Course Conversion
+              </button>
+            </div>
+            
+            {showCourseConversion && (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 mb-2">Transform this transcript into a structured learning course:</div>
+                <div className="bg-white p-3 rounded border">
+                  <div className="font-medium mb-2">Course Structure Preview:</div>
+                  <div className="text-sm space-y-1">
+                    <div>• Introduction: Meeting overview and context</div>
+                    <div>• Key Concepts: {extractKeyTopics(transcriptSegments).slice(0, 3).join(', ')}</div>
+                    <div>• Action Items: {actionItems.length} tasks and follow-ups</div>
+                    <div>• Summary: Meeting outcomes and next steps</div>
+                  </div>
+                </div>
+                <button
+                  onClick={convertToCourse}
+                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                >
+                  Create Course
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Auto-linking to Related Notebooks */}
+      {showAutoLinking && (
+        <div className="p-4 bg-teal-50 rounded">
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-semibold">Related Notebooks</div>
+            <button
+              onClick={() => setShowAutoLinking(!showAutoLinking)}
+              className="text-sm text-teal-600 hover:text-teal-800"
+            >
+              {showAutoLinking ? 'Hide' : 'Show'} Auto-linking
+            </button>
+          </div>
+          
+          {showAutoLinking && (
+            <div className="space-y-3">
+              <div className="text-sm text-gray-600 mb-2">Found {relatedNotebooks.length} related notebooks:</div>
+              <div className="space-y-3">
+                {relatedNotebooks.map(notebook => (
+                  <div key={notebook.id} className="bg-white p-3 rounded border">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium">{notebook.title}</div>
+                      <div className="text-sm text-gray-500">
+                        {(notebook.relevance * 100).toFixed(0)}% relevant
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-2">Related sections:</div>
+                    <div className="space-y-1">
+                      {notebook.sections.map(section => (
+                        <div key={section.id} className="text-sm p-2 bg-gray-50 rounded">
+                          <div className="font-medium">{section.title}</div>
+                          <div className="text-gray-600">{section.content}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="mt-2 text-sm text-teal-600 hover:text-teal-800">
+                      View Notebook →
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 } 

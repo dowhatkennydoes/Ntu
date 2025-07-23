@@ -160,6 +160,12 @@ interface WebhookEndpoint {
   secret?: string
 }
 
+// Replace mock user/role with a context (for now, use a mock context at the top of the file)
+const mockAuth = {
+  user: 'alice',
+  role: 'editor', // Try changing to 'viewer' or 'admin' to test
+};
+
 export function MarathonWorkflowBuilder() {
   const { nextStep, updateWorkflowData } = useWorkflow()
   
@@ -226,7 +232,9 @@ export function MarathonWorkflowBuilder() {
     versionHistory: []
   })
   const [showPermissionsModal, setShowPermissionsModal] = useState(false)
-  const [currentUserRole, setCurrentUserRole] = useState<string>('editor') // Would come from auth context
+  // Replace hardcoded user/role with mockAuth
+  const [currentUser, setCurrentUser] = useState<string>(mockAuth.user);
+  const [currentUserRole, setCurrentUserRole] = useState<string>(mockAuth.role);
   
   // MA92: Subflow state
   const [subflows, setSubflows] = useState<Subflow[]>([])
@@ -237,8 +245,6 @@ export function MarathonWorkflowBuilder() {
   // MA72: RBAC permission checking functions
   const canUserPerformAction = (action: 'view' | 'edit' | 'execute'): boolean => {
     const permissions = workflowMetadata.permissions
-    const currentUser = 'current-user' // Would come from auth context
-    
     // Check if user has required role
     if (!permissions.allowedRoles.includes(currentUserRole)) {
       return false

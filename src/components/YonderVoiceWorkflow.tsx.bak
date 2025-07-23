@@ -1,0 +1,1638 @@
+'use client'
+
+import React, { useState, useRef, useEffect } from 'react'
+import { 
+  MicrophoneIcon, 
+  StopIcon, 
+  PlayIcon, 
+  PauseIcon,
+  DocumentArrowUpIcon,
+  BookmarkIcon,
+  SpeakerWaveIcon,
+  ClockIcon,
+  UserIcon,
+  HeartIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  BoltIcon,
+  ArrowsRightLeftIcon
+} from '@heroicons/react/24/outline'
+
+interface TranscriptSegment {
+  id: string
+  speaker: string
+  speakerId: number
+  text: string
+  timestamp: number
+  duration: number
+  wordTimestamps: Array<{ word: string; start: number; end: number; confidence: number }>
+  sentiment: number // -1 to 1
+  emotion: 'happy' | 'angry' | 'worried' | 'confused' | 'excited' | 'neutral'
+  intent: 'request' | 'complaint' | 'praise' | 'confusion' | 'urgency' | 'statement'
+  urgency: number // 0 to 1
+  confidence: number
+  isBookmark?: boolean
+  actionItems?: string[]
+  isInterruption?: boolean
+  hasOverlap?: boolean
+  interruptedSpeaker?: number
+  overlapDuration?: number
+}
+
+interface Speaker {
+  id: number
+  name: string
+  color: string
+  totalTime: number
+  segments: number
+  totalWords: number
+  averageWPM: number
+}
+
+interface SessionStats {
+  totalDuration: number
+  totalWords: number
+  speakerCount: number
+  sentimentAverage: number
+  actionItemCount: number
+  bookmarkCount: number
+}
+
+const YonderVoiceWorkflow: React.FC = () => {
+  // Recording state
+  const [isRecording, setIsRecording] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
+  
+  // Playback state
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  
+  // Transcription state
+  const [transcript, setTranscript] = useState<TranscriptSegment[]>([])
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [lastAutoSave, setLastAutoSave] = useState<Date>(new Date())
+  
+  // UI state
+  const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null)
+  const [showSentimentDetails, setShowSentimentDetails] = useState(false)
+  const [viewMode, setViewMode] = useState<'standard' | 'split-pane'>('standard')
+  const [showTimeline, setShowTimeline] = useState(false)
+  const [highlightedText, setHighlightedText] = useState<string | null>(null)
+  const [comments, setComments] = useState<Record<string, Array<{id: string, text: string, timestamp: number}>>>({})
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [currentlyHighlightedWord, setCurrentlyHighlightedWord] = useState<{segmentId: string, wordIndex: number} | null>(null)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<{segmentId: string, matches: number[]}[]>([])
+  const [sectionMarks, setSectionMarks] = useState<Record<string, 'important' | 'confusing' | 'actionable'>>({})
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+  const [speakerFilters, setSpeakerFilters] = useState<Set<number>>(new Set())
+  const [showSpeakerFilters, setShowSpeakerFilters] = useState(false)
+  
+  // Refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Y21: Consistent speaker colors across sessions
+  const speakerColorMap = {
+    1: 'bg-blue-500',
+    2: 'bg-green-500', 
+    3: 'bg-purple-500',
+    4: 'bg-orange-500',
+    5: 'bg-pink-500',
+    6: 'bg-indigo-500',
+    7: 'bg-yellow-500',
+    8: 'bg-red-500'
+  } as const
+  
+  // Get persistent color for speaker (stored in localStorage)
+  const getSpeakerColor = (speakerId: number): string => {
+    const storedColors = localStorage.getItem('yonder_speaker_colors')
+    let colorMap: Record<number, string> = {}
+    
+    if (storedColors) {
+      colorMap = JSON.parse(storedColors)
+    }
+    
+    if (!colorMap[speakerId]) {
+      // Assign next available color
+      const usedColors = Object.values(colorMap)
+      const availableColors = Object.values(speakerColorMap)
+      const nextColor = availableColors.find(color => !usedColors.includes(color)) || speakerColorMap[1]
+      
+      colorMap[speakerId] = nextColor
+      localStorage.setItem('yonder_speaker_colors', JSON.stringify(colorMap))
+    }
+    
+    return colorMap[speakerId]
+  }
+  
+  // Calculate speakers from transcript with Y30: WPM calculation
+  const speakers: Speaker[] = React.useMemo(() => {
+    const speakerMap = new Map<number, { segments: number; totalTime: number; totalWords: number }>()
+    
+    transcript.forEach(segment => {
+      const wordCount = segment.text.split(' ').filter(word => word.trim().length > 0).length
+      const existing = speakerMap.get(segment.speakerId) || { segments: 0, totalTime: 0, totalWords: 0 }
+      speakerMap.set(segment.speakerId, {
+        segments: existing.segments + 1,
+        totalTime: existing.totalTime + segment.duration,
+        totalWords: existing.totalWords + wordCount
+      })
+    })
+    
+    return Array.from(speakerMap.entries()).map(([id, data]) => {
+      // Y30: Calculate Words Per Minute (WPM)
+      const averageWPM = data.totalTime > 0 ? (data.totalWords / data.totalTime) * 60 : 0
+      
+      return {
+        id,
+        name: `Speaker ${id}`,
+        color: getSpeakerColor(id),
+        totalTime: data.totalTime,
+        segments: data.segments,
+        totalWords: data.totalWords,
+        averageWPM: Math.round(averageWPM)
+      }
+    })
+  }, [transcript])
+
+  // Calculate session stats
+  const sessionStats: SessionStats = React.useMemo(() => {
+    const totalWords = transcript.reduce((sum, seg) => sum + seg.text.split(' ').length, 0)
+    const totalDuration = transcript.reduce((sum, seg) => sum + seg.duration, 0)
+    const sentimentSum = transcript.reduce((sum, seg) => sum + seg.sentiment, 0)
+    const actionItemCount = transcript.reduce((sum, seg) => sum + (seg.actionItems?.length || 0), 0)
+    const bookmarkCount = transcript.filter(seg => seg.isBookmark).length
+    
+    return {
+      totalDuration,
+      totalWords,
+      speakerCount: speakers.length,
+      sentimentAverage: transcript.length ? sentimentSum / transcript.length : 0,
+      actionItemCount,
+      bookmarkCount
+    }
+  }, [transcript, speakers])
+
+  // Y6: Auto-save every 5 seconds
+  useEffect(() => {
+    if (transcript.length > 0) {
+      autoSaveIntervalRef.current = setInterval(() => {
+        // Simulate auto-save to localStorage
+        localStorage.setItem('yonder_transcript', JSON.stringify(transcript))
+        setLastAutoSave(new Date())
+      }, 5000)
+    }
+    
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current)
+      }
+    }
+  }, [transcript])
+
+  // Y12: Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault()
+        handleBookmark()
+      }
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault()
+        // Start new section (could be implemented)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isRecording])
+
+  // Y25: Detect interruptions and overlaps
+  const detectInterruptions = (segments: TranscriptSegment[]): TranscriptSegment[] => {
+    return segments.map((segment, index) => {
+      if (index === 0) return segment
+      
+      const prevSegment = segments[index - 1]
+      const timeSinceLastSegment = segment.timestamp - (prevSegment.timestamp + prevSegment.duration)
+      
+      // Detect interruption (speaker change with <0.5s gap)
+      if (segment.speakerId !== prevSegment.speakerId && timeSinceLastSegment < 0.5) {
+        return {
+          ...segment,
+          isInterruption: true,
+          interruptedSpeaker: prevSegment.speakerId
+        }
+      }
+      
+      // Detect overlap (negative time gap)
+      if (timeSinceLastSegment < 0) {
+        return {
+          ...segment,
+          hasOverlap: true,
+          overlapDuration: Math.abs(timeSinceLastSegment)
+        }
+      }
+      
+      return segment
+    })
+  }
+
+  // Replace simulateTranscription with Whisper placeholder
+  const simulateTranscription = async (audioData: Blob) => {
+    setIsTranscribing(true);
+    // Y3: Local transcription must use Whisper models
+    // TODO: Integrate Whisper model for local transcription here
+    // For now, show a placeholder message and mock segment
+    setTranscript([]);
+    setTimeout(() => {
+      setTranscript([
+        {
+          id: `segment-${Date.now()}`,
+          speaker: 'Speaker 1',
+          speakerId: 1,
+          text: '[Whisper transcription would appear here. Local Whisper integration is pending.]',
+          timestamp: 0,
+          duration: 10,
+          confidence: 0.9,
+          wordTimestamps: [],
+          sentiment: 0,
+          emotion: 'neutral',
+          intent: 'statement',
+          urgency: 0,
+        },
+      ]);
+      setIsTranscribing(false);
+    }, 2000);
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      
+      const chunks: BlobPart[] = []
+      mediaRecorder.ondataavailable = (event) => {
+        chunks.push(event.data)
+      }
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/wav' })
+        setAudioBlob(blob)
+        simulateTranscription(blob)
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      mediaRecorder.start()
+      setIsRecording(true)
+      setRecordingTime(0)
+      
+      // Update recording time
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+      
+    } catch (error) {
+      console.error('Error starting recording:', error)
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current)
+      }
+    }
+  }
+
+  const handleFileUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    
+    const file = files[0]
+    // Y5: Support MP3, WAV, M4A, MP4, MOV
+    const supportedTypes = ['audio/mp3', 'audio/wav', 'audio/m4a', 'video/mp4', 'video/quicktime']
+    
+    if (!supportedTypes.includes(file.type)) {
+      alert('Unsupported file type. Please upload MP3, WAV, M4A, MP4, or MOV files.')
+      return
+    }
+    
+    setAudioBlob(file)
+    simulateTranscription(file)
+  }
+
+  // Y11: Bookmark functionality
+  const handleBookmark = () => {
+    if (!isRecording) return
+    
+    const bookmarkSegment: TranscriptSegment = {
+      id: `bookmark-${Date.now()}`,
+      speaker: "System",
+      speakerId: 0,
+      text: `[Bookmark at ${formatTime(recordingTime)}]`,
+      timestamp: recordingTime,
+      duration: 0,
+      wordTimestamps: [],
+      sentiment: 0,
+      emotion: 'neutral',
+      intent: 'statement',
+      urgency: 0,
+      confidence: 1,
+      isBookmark: true,
+      actionItems: []
+    }
+    
+    setTranscript(prev => [...prev, bookmarkSegment])
+  }
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const getSentimentColor = (sentiment: number): string => {
+    if (sentiment > 0.3) return 'text-green-600'
+    if (sentiment < -0.3) return 'text-red-600'
+    return 'text-gray-600'
+  }
+
+  const getSentimentIcon = (sentiment: number) => {
+    if (sentiment > 0.3) return <HeartIcon className="w-4 h-4" />
+    if (sentiment < -0.3) return <ExclamationTriangleIcon className="w-4 h-4" />
+    return <div className="w-4 h-4 rounded-full bg-gray-400"></div>
+  }
+
+  const getEmotionColor = (emotion: string): string => {
+    const colors = {
+      happy: 'bg-green-100 text-green-800',
+      excited: 'bg-blue-100 text-blue-800',
+      worried: 'bg-yellow-100 text-yellow-800',
+      angry: 'bg-red-100 text-red-800',
+      confused: 'bg-purple-100 text-purple-800',
+      neutral: 'bg-gray-100 text-gray-800'
+    }
+    return colors[emotion as keyof typeof colors] || colors.neutral
+  }
+
+  // Y86: Export functionality
+  const exportTranscript = (format: 'txt' | 'json' | 'csv' | 'docx' | 'pdf') => {
+    let content = ''
+    let filename = `transcript_${new Date().toISOString().split('T')[0]}`
+    
+    switch (format) {
+      case 'txt':
+        content = transcript.map(segment => 
+          `[${formatTime(segment.timestamp)}] ${segment.speaker}: ${segment.text}`
+        ).join('\n\n')
+        downloadFile(content, `${filename}.txt`, 'text/plain')
+        break
+        
+      case 'json':
+        const jsonData = {
+          sessionStats,
+          speakers,
+          transcript: transcript.map(segment => ({
+            ...segment,
+            wordTimestamps: segment.wordTimestamps
+          }))
+        }
+        downloadFile(JSON.stringify(jsonData, null, 2), `${filename}.json`, 'application/json')
+        break
+        
+      case 'csv':
+        const csvHeader = 'Timestamp,Speaker,Text,Sentiment,Emotion,Intent,Urgency,Confidence\n'
+        const csvRows = transcript.map(segment => 
+          `"${formatTime(segment.timestamp)}","${segment.speaker}","${segment.text}","${segment.sentiment}","${segment.emotion}","${segment.intent}","${segment.urgency}","${segment.confidence}"`
+        ).join('\n')
+        downloadFile(csvHeader + csvRows, `${filename}.csv`, 'text/csv')
+        break
+        
+      case 'docx':
+      case 'pdf':
+        alert(`${format.toUpperCase()} export will be available in the next release`)
+        break
+    }
+    setShowExportMenu(false)
+  }
+
+  const downloadFile = (content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  // Y75: Highlight functionality
+  const handleTextHighlight = (segmentId: string, selectedText: string) => {
+    if (selectedText.trim()) {
+      setHighlightedText(selectedText)
+      // Could store highlights per segment
+    }
+  }
+
+  // Y75: Comment functionality
+  const addComment = (segmentId: string, commentText: string) => {
+    if (commentText.trim()) {
+      const newComment = {
+        id: Date.now().toString(),
+        text: commentText,
+        timestamp: Date.now()
+      }
+      setComments(prev => ({
+        ...prev,
+        [segmentId]: [...(prev[segmentId] || []), newComment]
+      }))
+    }
+  }
+
+  // Y78: Real-time word highlighting
+  useEffect(() => {
+    if (isPlaying && transcript.length > 0) {
+      const interval = setInterval(() => {
+        const adjustedCurrentTime = currentTime / playbackSpeed
+        
+        // Find the current segment and word based on playback time
+        for (const segment of transcript) {
+          if (adjustedCurrentTime >= segment.timestamp && 
+              adjustedCurrentTime < segment.timestamp + segment.duration) {
+            
+            // Find current word within the segment
+            const relativeTime = adjustedCurrentTime - segment.timestamp
+            const currentWord = segment.wordTimestamps.find(word => 
+              relativeTime >= word.start - segment.timestamp && 
+              relativeTime < word.end - segment.timestamp
+            )
+            
+            if (currentWord) {
+              const wordIndex = segment.wordTimestamps.indexOf(currentWord)
+              setCurrentlyHighlightedWord({
+                segmentId: segment.id,
+                wordIndex
+              })
+            }
+            break
+          }
+        }
+      }, 100) // Update every 100ms for smooth highlighting
+      
+      return () => clearInterval(interval)
+    } else {
+      setCurrentlyHighlightedWord(null)
+    }
+  }, [isPlaying, currentTime, transcript, playbackSpeed])
+
+  // Y78: Simulate audio playback progression
+  useEffect(() => {
+    if (isPlaying) {
+      const interval = setInterval(() => {
+        setCurrentTime(prev => {
+          const newTime = prev + (0.1 * playbackSpeed) // 100ms increments
+          if (newTime >= sessionStats.totalDuration) {
+            setIsPlaying(false)
+            return sessionStats.totalDuration
+          }
+          return newTime
+        })
+      }, 100)
+      
+      return () => clearInterval(interval)
+    }
+  }, [isPlaying, playbackSpeed, sessionStats.totalDuration])
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying)
+  }
+
+  const handleSpeedChange = (speed: number) => {
+    setPlaybackSpeed(speed)
+  }
+
+  const jumpToTime = (timestamp: number) => {
+    setCurrentTime(timestamp)
+  }
+
+  // Y56: Sync transcript to Memory app
+  const syncToMemory = () => {
+    if (transcript.length === 0) {
+      alert('No transcript to sync. Please record or upload audio first.')
+      return
+    }
+
+    const memoryEntry = {
+      id: `yonder-${Date.now()}`,
+      title: `Voice Session - ${new Date().toLocaleDateString()}`,
+      content: transcript.map(segment => 
+        `[${formatTime(segment.timestamp)}] ${segment.speaker}: ${segment.text}`
+      ).join('\n\n'),
+      metadata: {
+        source: 'Yonder Voice Transcription',
+        sessionStats,
+        speakers: speakers.map(s => ({ name: s.name, totalTime: s.totalTime, segments: s.segments })),
+        analytics: {
+          averageSentiment: sessionStats.sentimentAverage,
+          totalActionItems: sessionStats.actionItemCount,
+          totalBookmarks: sessionStats.bookmarkCount
+        },
+        rawTranscript: transcript
+      },
+      tags: ['voice', 'transcript', 'meeting'],
+      createdAt: new Date().toISOString(),
+      app: 'yonder'
+    }
+
+    // Store in localStorage (simulating Memory app sync)
+    const existingMemories = JSON.parse(localStorage.getItem('ntu_memories') || '[]')
+    existingMemories.push(memoryEntry)
+    localStorage.setItem('ntu_memories', JSON.stringify(existingMemories))
+
+    alert(`Transcript synced to Memory! Created entry: "${memoryEntry.title}"`)
+  }
+
+  // Y57: Extract key quotes for Notebook
+  const extractQuotesToNotebook = () => {
+    if (transcript.length === 0) {
+      alert('No transcript available for quote extraction.')
+      return
+    }
+
+    // Extract quotes with high sentiment, action items, or bookmarks
+    const keyQuotes = transcript.filter(segment => 
+      Math.abs(segment.sentiment) > 0.4 || 
+      segment.actionItems && segment.actionItems.length > 0 ||
+      segment.isBookmark ||
+      segment.urgency > 0.7
+    ).map(segment => ({
+      quote: segment.text,
+      speaker: segment.speaker,
+      timestamp: formatTime(segment.timestamp),
+      context: {
+        sentiment: segment.sentiment,
+        emotion: segment.emotion,
+        intent: segment.intent,
+        urgency: segment.urgency,
+        actionItems: segment.actionItems || []
+      }
+    }))
+
+    if (keyQuotes.length === 0) {
+      alert('No significant quotes found to extract.')
+      return
+    }
+
+    // Create notebook entry
+    const notebookEntry = {
+      id: `notebook-quotes-${Date.now()}`,
+      title: `Key Quotes - Voice Session ${new Date().toLocaleDateString()}`,
+      content: keyQuotes.map(quote => 
+        `**${quote.speaker}** (${quote.timestamp})\n> "${quote.quote}"\n\n*Context: ${quote.context.emotion}, sentiment: ${quote.context.sentiment.toFixed(2)}*\n${quote.context.actionItems.length > 0 ? `\n**Action Items:**\n${quote.context.actionItems.map(item => `- ${item}`).join('\n')}\n` : ''}\n---`
+      ).join('\n\n'),
+      metadata: {
+        source: 'Yonder Quote Extraction',
+        extractedCount: keyQuotes.length,
+        sessionDate: new Date().toISOString()
+      },
+      createdAt: new Date().toISOString(),
+      app: 'notebook'
+    }
+
+    // Store in localStorage (simulating Notebook sync)
+    const existingNotes = JSON.parse(localStorage.getItem('ntu_notebook_entries') || '[]')
+    existingNotes.push(notebookEntry)
+    localStorage.setItem('ntu_notebook_entries', JSON.stringify(existingNotes))
+
+    alert(`Extracted ${keyQuotes.length} key quotes to Notebook!`)
+  }
+
+  // Y59: Generate summary and store as memory
+  const generateSummary = () => {
+    if (transcript.length === 0) {
+      alert('No transcript available for summarization.')
+      return
+    }
+
+    // Generate AI-style summary
+    const summary = {
+      overview: `This voice session contained ${transcript.length} segments from ${speakers.length} speakers, lasting ${formatTime(sessionStats.totalDuration)}.`,
+      keyTopics: ['Meeting Discussion', 'Project Updates', 'Action Items'],
+      sentimentAnalysis: `Overall sentiment was ${sessionStats.sentimentAverage > 0 ? 'positive' : sessionStats.sentimentAverage < 0 ? 'negative' : 'neutral'} (${sessionStats.sentimentAverage.toFixed(2)}).`,
+      actionItems: transcript.flatMap(s => s.actionItems || []),
+      speakers: speakers.map(s => `${s.name}: ${formatTime(s.totalTime)} speaking time, ${s.segments} segments`),
+      bookmarks: transcript.filter(s => s.isBookmark).length
+    }
+
+    const summaryMemory = {
+      id: `summary-${Date.now()}`,
+      title: `Voice Session Summary - ${new Date().toLocaleDateString()}`,
+      content: `# Voice Session Summary
+
+## Overview
+${summary.overview}
+
+## Sentiment Analysis
+${summary.sentimentAnalysis}
+
+## Speaker Statistics
+${summary.speakers.map(s => `- ${s}`).join('\n')}
+
+## Action Items (${summary.actionItems.length})
+${summary.actionItems.map(item => `- ${item}`).join('\n')}
+
+## Key Metrics
+- Total bookmarks: ${summary.bookmarks}
+- Average confidence: ${(transcript.reduce((sum, s) => sum + s.confidence, 0) / transcript.length * 100).toFixed(1)}%
+- High urgency segments: ${transcript.filter(s => s.urgency > 0.7).length}`,
+      metadata: {
+        source: 'Yonder AI Summary',
+        originalTranscriptId: `yonder-${Date.now()}`,
+        summaryType: 'automatic',
+        metrics: summary
+      },
+      tags: ['summary', 'voice', 'ai-generated'],
+      createdAt: new Date().toISOString(),
+      app: 'memory'
+    }
+
+    // Store summary in memory
+    const existingMemories = JSON.parse(localStorage.getItem('ntu_memories') || '[]')
+    existingMemories.push(summaryMemory)
+    localStorage.setItem('ntu_memories', JSON.stringify(existingMemories))
+
+    alert(`AI summary generated and saved to Memory!`)
+  }
+
+  // Y76: Search transcript functionality
+  const performSearch = (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    const results: {segmentId: string, matches: number[]}[] = []
+    const searchTerm = query.toLowerCase()
+
+    transcript.forEach(segment => {
+      const matches: number[] = []
+      const words = segment.text.toLowerCase().split(' ')
+      
+      words.forEach((word, index) => {
+        if (word.includes(searchTerm)) {
+          matches.push(index)
+        }
+      })
+
+      if (matches.length > 0) {
+        results.push({ segmentId: segment.id, matches })
+      }
+    })
+
+    setSearchResults(results)
+  }
+
+  // Y79: Section marking functionality
+  const markSection = (segmentId: string, mark: 'important' | 'confusing' | 'actionable') => {
+    setSectionMarks(prev => {
+      const updated = { ...prev };
+      if (prev[segmentId] === mark) {
+        delete updated[segmentId];
+      } else {
+        updated[segmentId] = mark;
+      }
+      return updated;
+    });
+  };
+
+  // Y77: Section collapsing
+  const toggleSectionCollapse = (segmentId: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [segmentId]: !prev[segmentId]
+    }))
+  }
+
+  // Y28: Speaker filtering functionality
+  const toggleSpeakerFilter = (speakerId: number) => {
+    setSpeakerFilters(prev => {
+      const newFilters = new Set(prev)
+      if (newFilters.has(speakerId)) {
+        newFilters.delete(speakerId)
+      } else {
+        newFilters.add(speakerId)
+      }
+      return newFilters
+    })
+  }
+
+  const clearSpeakerFilters = () => {
+    setSpeakerFilters(new Set())
+  }
+
+  const selectAllSpeakers = () => {
+    const allSpeakerIds = speakers.map(s => s.id)
+    setSpeakerFilters(new Set(allSpeakerIds))
+  }
+
+  // Filter transcript based on speaker filters
+  const getFilteredTranscript = () => {
+    if (speakerFilters.size === 0) {
+      return transcript // Show all if no filters active
+    }
+    return transcript.filter(segment => speakerFilters.has(segment.speakerId))
+  }
+
+  const getSectionMarkColor = (mark: 'important' | 'confusing' | 'actionable') => {
+    const colors = {
+      important: 'bg-yellow-100 border-yellow-300',
+      confusing: 'bg-orange-100 border-orange-300', 
+      actionable: 'bg-green-100 border-green-300'
+    }
+    return colors[mark]
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 p-6">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center">
+              <MicrophoneIcon className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Yonder Voice Session</h1>
+              <p className="text-sm text-gray-600">AI-powered audio processing and transcription</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            {/* Y71: Split-pane mode toggle */}
+            <button
+              onClick={() => setViewMode(viewMode === 'standard' ? 'split-pane' : 'standard')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                viewMode === 'split-pane' 
+                  ? 'bg-red-100 text-red-800' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {viewMode === 'split-pane' ? 'Split View' : 'Standard'}
+            </button>
+            
+            {/* Y72: Timeline toggle */}
+            <button
+              onClick={() => setShowTimeline(!showTimeline)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                showTimeline 
+                  ? 'bg-blue-100 text-blue-800' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Timeline
+            </button>
+            
+            {/* Y86: Export menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Export
+              </button>
+              {showExportMenu && (
+                <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-32">
+                  {['txt', 'json', 'csv', 'docx', 'pdf'].map(format => (
+                    <button
+                      key={format}
+                      onClick={() => exportTranscript(format as any)}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      {format.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="text-right text-sm">
+              <div className="text-gray-600">Auto-saved</div>
+              <div className="text-xs text-gray-500">{lastAutoSave.toLocaleTimeString()}</div>
+            </div>
+            <div className={`w-3 h-3 rounded-full ${isTranscribing ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Y72: Timeline Visualization */}
+      {showTimeline && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Session Timeline</h2>
+          <div className="relative">
+            {/* Timeline bar */}
+            <div className="h-20 bg-gray-100 rounded-lg relative overflow-hidden">
+              {transcript.map((segment, index) => {
+                const width = (segment.duration / sessionStats.totalDuration) * 100
+                const left = (segment.timestamp / sessionStats.totalDuration) * 100
+                
+                return (
+                  <div
+                    key={segment.id}
+                    className="absolute top-0 h-full flex flex-col"
+                    style={{ left: `${left}%`, width: `${width}%` }}
+                  >
+                    {/* Speaker bar with interruption indicators */}
+                    <div 
+                      className={`h-1/3 ${getSpeakerColor(segment.speakerId)} opacity-80 relative`}
+                      title={`${segment.speaker}: ${segment.text.substring(0, 50)}...`}
+                    >
+                      {/* Y25: Interruption/overlap indicators on timeline */}
+                      {segment.isInterruption && (
+                        <div className="absolute top-0 right-0 w-1 h-full bg-red-600 opacity-90" title="Interruption"></div>
+                      )}
+                      {segment.hasOverlap && (
+                        <div className="absolute top-0 right-0 w-1 h-full bg-orange-600 opacity-90" title="Overlap"></div>
+                      )}
+                    </div>
+                    {/* Sentiment bar */}
+                    <div 
+                      className={`h-1/3 ${
+                        segment.sentiment > 0.3 ? 'bg-green-400' :
+                        segment.sentiment < -0.3 ? 'bg-red-400' : 'bg-gray-400'
+                      } opacity-70`}
+                      title={`Sentiment: ${segment.sentiment.toFixed(2)}`}
+                    ></div>
+                    {/* Emotion/urgency bar */}
+                    <div 
+                      className={`h-1/3 ${
+                        segment.urgency > 0.7 ? 'bg-orange-400' :
+                        segment.emotion === 'excited' ? 'bg-blue-400' :
+                        segment.emotion === 'happy' ? 'bg-green-400' :
+                        segment.emotion === 'angry' ? 'bg-red-400' :
+                        segment.emotion === 'worried' ? 'bg-yellow-400' : 'bg-gray-400'
+                      } opacity-60`}
+                      title={`${segment.emotion} (urgency: ${(segment.urgency * 100).toFixed(0)}%)`}
+                    ></div>
+                  </div>
+                )
+              })}
+            </div>
+            {/* Timeline labels */}
+            <div className="flex justify-between text-xs text-gray-500 mt-2">
+              <span>0:00</span>
+              <span>Speakers | Sentiment | Emotion/Urgency</span>
+              <span>{formatTime(sessionStats.totalDuration)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={viewMode === 'split-pane' ? 'grid grid-cols-2 gap-6' : 'grid lg:grid-cols-3 gap-6'}>
+        {/* Left Column - Audio Controls or Recording Controls */}
+        <div className={viewMode === 'split-pane' ? 'col-span-1' : 'lg:col-span-1'}>
+          {viewMode === 'split-pane' ? (
+            /* Y71: Split-pane mode - Audio panel */
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Audio Playback</h2>
+              
+              {/* Audio waveform placeholder */}
+              <div className="bg-gray-100 rounded-lg p-8 mb-6 text-center">
+                <SpeakerWaveIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 mb-2">Audio Waveform</p>
+                <p className="text-sm text-gray-400">Synchronized playback with transcript</p>
+              </div>
+              
+              {/* Enhanced Playback controls */}
+              <div className="space-y-4">
+                <div className="flex justify-center space-x-4">
+                  <button 
+                    onClick={handlePlayPause}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                      isPlaying 
+                        ? 'bg-red-500 hover:bg-red-600 text-white' 
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {isPlaying ? (
+                      <PauseIcon className="w-6 h-6" />
+                    ) : (
+                      <PlayIcon className="w-6 h-6" />
+                    )}
+                  </button>
+                </div>
+                
+                {/* Playback progress */}
+                <div className="space-y-2">
+                  <div className="bg-gray-200 rounded-full h-2">
+                    <div className="bg-red-500 h-2 rounded-full" style={{ width: '30%' }}></div>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(sessionStats.totalDuration)}</span>
+                  </div>
+                </div>
+                
+                {/* Speed controls */}
+                <div className="flex justify-center space-x-2">
+                  {[0.5, 1, 1.5, 2].map(speed => (
+                    <button 
+                      key={speed}
+                      onClick={() => handleSpeedChange(speed)}
+                      className={`px-3 py-1 text-xs rounded transition-colors ${
+                        playbackSpeed === speed
+                          ? 'bg-red-100 text-red-700 font-medium'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Y74: Jump to speaker controls */}
+                {speakers.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-xs font-semibold text-gray-700 mb-2">Jump to Speaker</h3>
+                    <div className="space-y-1">
+                      {speakers.map(speaker => {
+                        const firstSegment = transcript.find(s => s.speakerId === speaker.id)
+                        return (
+                          <button
+                            key={speaker.id}
+                            onClick={() => firstSegment && jumpToTime(firstSegment.timestamp)}
+                            className="w-full flex items-center justify-between p-2 text-xs bg-gray-50 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-2 h-2 ${speaker.color} rounded-full`}></div>
+                              <span>{speaker.name}</span>
+                            </div>
+                            <span className="text-gray-500">
+                              {formatTime(firstSegment?.timestamp || 0)}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Standard mode - Recording controls */
+            <div className="space-y-6">
+          {/* Recording Control */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Recording Control</h2>
+            
+            <div className="text-center space-y-4">
+              <div className="text-2xl font-mono text-gray-700">
+                {formatTime(recordingTime)}
+              </div>
+              
+              <div className="flex justify-center space-x-3">
+                {!isRecording ? (
+                  <button
+                    onClick={startRecording}
+                    className="w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors shadow-lg"
+                  >
+                    <MicrophoneIcon className="w-8 h-8" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={stopRecording}
+                    className="w-16 h-16 bg-gray-500 hover:bg-gray-600 rounded-full flex items-center justify-center text-white transition-colors shadow-lg"
+                  >
+                    <StopIcon className="w-8 h-8" />
+                  </button>
+                )}
+                
+                <button
+                  onClick={handleBookmark}
+                  disabled={!isRecording}
+                  className="w-16 h-16 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 rounded-full flex items-center justify-center text-white transition-colors shadow-lg"
+                  title="Bookmark (Ctrl+B)"
+                >
+                  <BookmarkIcon className="w-8 h-8" />
+                </button>
+              </div>
+              
+              <div className="text-xs text-gray-500">
+                Hotkeys: Ctrl+B (Bookmark), Ctrl+Enter (New Section)
+              </div>
+            </div>
+          </div>
+
+          {/* File Upload */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload Audio</h2>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".mp3,.wav,.m4a,.mp4,.mov"
+              onChange={(e) => handleFileUpload(e.target.files)}
+              className="hidden"
+            />
+            
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-red-400 hover:bg-red-50 transition-colors flex items-center justify-center space-x-2"
+            >
+              <DocumentArrowUpIcon className="w-6 h-6 text-gray-400" />
+              <span className="text-gray-600">Upload Audio File</span>
+            </button>
+            
+            <div className="mt-2 text-xs text-gray-500">
+              Supports: MP3, WAV, M4A, MP4, MOV, YouTube URLs
+            </div>
+          </div>
+
+          {/* Session Stats */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Session Stats</h2>
+            
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Duration:</span>
+                <span className="font-medium">{formatTime(sessionStats.totalDuration)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Words:</span>
+                <span className="font-medium">{sessionStats.totalWords}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Speakers:</span>
+                <span className="font-medium">{sessionStats.speakerCount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Sentiment:</span>
+                <span className={`font-medium ${getSentimentColor(sessionStats.sentimentAverage)}`}>
+                  {sessionStats.sentimentAverage > 0 ? '+' : ''}{sessionStats.sentimentAverage.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Action Items:</span>
+                <span className="font-medium">{sessionStats.actionItemCount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Bookmarks:</span>
+                <span className="font-medium">{sessionStats.bookmarkCount}</span>
+              </div>
+            </div>
+            
+            {/* Y56, Y57, Y59: Integration buttons */}
+            {transcript.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Integration</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={syncToMemory}
+                    className="w-full text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span>Sync to Memory</span>
+                  </button>
+                  <button
+                    onClick={extractQuotesToNotebook}
+                    className="w-full text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V9a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span>Extract Quotes</span>
+                  </button>
+                  <button
+                    onClick={generateSummary}
+                    className="w-full text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Generate Summary</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Y24: Enhanced Speakers with Talk Time Visualization */}
+          {speakers.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Speaker Analytics</h2>
+              
+              {/* Y24: Talk time pie chart visualization */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Talk Time Distribution</h3>
+                <div className="relative w-32 h-32 mx-auto mb-4">
+                  <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                    {(() => {
+                      let cumulativePercentage = 0
+                      return speakers.map((speaker, index) => {
+                        const percentage = (speaker.totalTime / sessionStats.totalDuration) * 100
+                        const strokeDasharray = `${percentage} ${100 - percentage}`
+                        const strokeDashoffset = -cumulativePercentage
+                        cumulativePercentage += percentage
+                        
+                        return (
+                          <circle
+                            key={speaker.id}
+                            cx="50"
+                            cy="50"
+                            r="15.915"
+                            fill="transparent"
+                            className={speaker.color.replace('bg-', 'stroke-')}
+                            strokeWidth="8"
+                            strokeDasharray={strokeDasharray}
+                            strokeDashoffset={strokeDashoffset}
+                            style={{
+                              transformOrigin: '50% 50%',
+                            }}
+                          />
+                        )
+                      })
+                    })()}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500">Total</div>
+                      <div className="text-sm font-medium">{formatTime(sessionStats.totalDuration)}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Speaker legend */}
+                <div className="space-y-2">
+                  {speakers.map(speaker => {
+                    const percentage = ((speaker.totalTime / sessionStats.totalDuration) * 100).toFixed(1)
+                    return (
+                      <div key={speaker.id} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-3 h-3 ${speaker.color} rounded-full`}></div>
+                          <span>{speaker.name}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-gray-600">
+                          <span>{percentage}%</span>
+                          <span className="text-xs">({speaker.averageWPM} WPM)</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              
+              {/* Speaker details */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700">Speaker Details</h3>
+                {speakers.map(speaker => (
+                  <div 
+                    key={speaker.id}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedSpeaker === speaker.id ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setSelectedSpeaker(selectedSpeaker === speaker.id ? null : speaker.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 ${speaker.color} rounded-full`}></div>
+                        <span className="font-medium text-gray-900">{speaker.name}</span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {speaker.segments} segments
+                      </div>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-500">
+                      <div>Talk time: {formatTime(speaker.totalTime)}</div>
+                      <div>Avg segment: {formatTime(speaker.totalTime / speaker.segments)}</div>
+                      <div>Total words: {speaker.totalWords}</div>
+                      <div className="font-medium text-blue-600">WPM: {speaker.averageWPM}</div>
+                    </div>
+                    {/* Talk time bar */}
+                    <div className="mt-2">
+                      <div className="w-full bg-gray-200 rounded-full h-1">
+                        <div 
+                          className={`h-1 rounded-full ${speaker.color}`}
+                          style={{ width: `${(speaker.totalTime / sessionStats.totalDuration) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        
+
+        {/* Right Column - Transcript */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Enhanced Transcript Header with Search */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Live Transcript</h2>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowSentimentDetails(!showSentimentDetails)}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  {showSentimentDetails ? 'Hide' : 'Show'} Analytics
+                </button>
+                {isTranscribing && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <span>Transcribing...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Y76: Search interface */}
+            <div className="flex items-center space-x-3">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Search transcript..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    performSearch(e.target.value)
+                  }}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              
+              {searchResults.length > 0 && (
+                <div className="text-sm text-gray-600">
+                  {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                </div>
+              )}
+              
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  setSearchResults([])
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Clear
+              </button>
+            </div>
+            
+            {/* Y28: Speaker filtering interface */}
+            {speakers.length > 1 && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-700">Filter by Speaker</h3>
+                  <button
+                    onClick={() => setShowSpeakerFilters(!showSpeakerFilters)}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    {showSpeakerFilters ? 'Hide' : 'Show'} Filters
+                  </button>
+                </div>
+                
+                {showSpeakerFilters && (
+                  <div className="space-y-3">
+                    {/* Filter controls */}
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={selectAllSpeakers}
+                        className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition-colors"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={clearSpeakerFilters}
+                        className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 px-2 py-1 rounded transition-colors"
+                      >
+                        Clear All
+                      </button>
+                      {speakerFilters.size > 0 && (
+                        <span className="text-xs text-gray-600">
+                          {speakerFilters.size} of {speakers.length} selected
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Speaker checkboxes */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {speakers.map(speaker => (
+                        <label 
+                          key={speaker.id}
+                          className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={speakerFilters.has(speaker.id) || speakerFilters.size === 0}
+                            onChange={() => toggleSpeakerFilter(speaker.id)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className={`w-3 h-3 rounded-full ${speaker.color}`}></div>
+                          <span className="text-sm text-gray-700">{speaker.name}</span>
+                          <span className="text-xs text-gray-500">({speaker.segments})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Transcript Content */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="max-h-96 overflow-y-auto p-6 space-y-4">
+              {isTranscribing && (
+                <div className="text-blue-600 font-semibold mb-2">Transcribing with Whisper (local)...</div>
+              )}
+              {isTranscribing && (
+                <div className="text-xs text-gray-500 mb-2">Target: &lt;30s for 10-min file (Whisper)</div>
+              )}
+              {transcript.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <MicrophoneIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p>Start recording or upload a file to begin transcription</p>
+                </div>
+              ) : (
+                getFilteredTranscript()
+                  .filter(segment => selectedSpeaker === null || segment.speakerId === selectedSpeaker)
+                  .map(segment => (
+                    <div 
+                      key={segment.id} 
+                      className={`p-4 rounded-lg border transition-colors ${
+                        segment.isBookmark 
+                          ? 'border-yellow-300 bg-yellow-50' 
+                          : sectionMarks[segment.id]
+                          ? getSectionMarkColor(sectionMarks[segment.id]) 
+                          : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-3 h-3 rounded-full ${getSpeakerColor(segment.speakerId)}`}></div>
+                          <span className="font-medium text-gray-900">{segment.speaker}</span>
+                          <span className="text-xs text-gray-500">
+                            {formatTime(segment.timestamp)}
+                          </span>
+                          {segment.isBookmark && (
+                            <BookmarkIcon className="w-4 h-4 text-yellow-600" />
+                          )}
+                          {/* Y25: Interruption and overlap indicators */}
+                          {segment.isInterruption && (
+                            <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-red-100 text-red-700">
+                              <BoltIcon className="w-3 h-3" />
+                              <span className="text-xs">Interrupted Speaker {segment.interruptedSpeaker}</span>
+                            </div>
+                          )}
+                          {segment.hasOverlap && (
+                            <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-orange-100 text-orange-700">
+                              <ArrowsRightLeftIcon className="w-3 h-3" />
+                              <span className="text-xs">Overlap ({segment.overlapDuration?.toFixed(1)}s)</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {/* Y77: Collapse button */}
+                          <button
+                            onClick={() => toggleSectionCollapse(segment.id)}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Collapse section"
+                          >
+                            <svg className={`w-4 h-4 transition-transform ${collapsedSections[segment.id] ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          
+                          {/* Y79: Section marking buttons */}
+                          <div className="flex space-x-1">
+                            <button
+                              onClick={() => markSection(segment.id, 'important')}
+                              className={`w-4 h-4 rounded-full transition-colors ${
+                                sectionMarks[segment.id] === 'important' 
+                                  ? 'bg-yellow-400 text-white' 
+                                  : 'bg-gray-200 hover:bg-yellow-200'
+                              }`}
+                              title="Mark as important"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => markSection(segment.id, 'confusing')}
+                              className={`w-4 h-4 rounded-full transition-colors ${
+                                sectionMarks[segment.id] === 'confusing' 
+                                  ? 'bg-orange-400 text-white' 
+                                  : 'bg-gray-200 hover:bg-orange-200'
+                              }`}
+                              title="Mark as confusing"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => markSection(segment.id, 'actionable')}
+                              className={`w-4 h-4 rounded-full transition-colors ${
+                                sectionMarks[segment.id] === 'actionable' 
+                                  ? 'bg-green-400 text-white' 
+                                  : 'bg-gray-200 hover:bg-green-200'
+                              }`}
+                              title="Mark as actionable"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
+                          
+                          <span className="text-xs text-gray-500">
+                            {(segment.confidence * 100).toFixed(0)}%
+                          </span>
+                          {getSentimentIcon(segment.sentiment)}
+                        </div>
+                      </div>
+                      
+                      {/* Y77: Collapsible content */}
+                      {!collapsedSections[segment.id] && (
+                        <>
+                          {/* Y75, Y76, Y78: Enhanced text with search highlighting and real-time word highlighting */}
+                          <p 
+                            className="text-gray-800 leading-relaxed mb-2 select-text"
+                            onMouseUp={(e) => {
+                              const selection = window.getSelection()
+                              const selectedText = selection?.toString()
+                              if (selectedText) {
+                                handleTextHighlight(segment.id, selectedText)
+                              }
+                            }}
+                          >
+                            {segment.wordTimestamps.map((wordData, wordIndex) => {
+                              const searchResult = searchResults.find(r => r.segmentId === segment.id)
+                              const isSearchMatch = searchResult?.matches.includes(wordIndex)
+                              
+                              return (
+                                <span
+                                  key={wordIndex}
+                                  className={`transition-all duration-200 ${
+                                    currentlyHighlightedWord?.segmentId === segment.id && 
+                                    currentlyHighlightedWord?.wordIndex === wordIndex
+                                      ? 'bg-red-200 text-red-900 font-medium px-1 rounded shadow-sm'
+                                      : isSearchMatch
+                                      ? 'bg-yellow-200 text-yellow-900 font-medium px-1 rounded'
+                                      : 'hover:bg-gray-100'
+                                  }`}
+                                  onClick={() => jumpToTime(segment.timestamp + wordData.start)}
+                                  style={{ cursor: 'pointer' }}
+                                  title={`Jump to ${formatTime(segment.timestamp + wordData.start)} (confidence: ${(wordData.confidence * 100).toFixed(0)}%)`}
+                                >
+                                  {wordData.word}
+                                  {wordIndex < segment.wordTimestamps.length - 1 ? ' ' : ''}
+                                </span>
+                              )
+                            })}
+                          </p>
+                      
+                      {showSentimentDetails && (
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <span className={`px-2 py-1 rounded-full ${getEmotionColor(segment.emotion)}`}>
+                            {segment.emotion}
+                          </span>
+                          <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                            {segment.intent}
+                          </span>
+                          {segment.urgency > 0.5 && (
+                            <span className="px-2 py-1 rounded-full bg-red-100 text-red-800">
+                              High Urgency ({(segment.urgency * 100).toFixed(0)}%)
+                            </span>
+                          )}
+                          <span className={`px-2 py-1 rounded-full ${getSentimentColor(segment.sentiment)} bg-gray-100`}>
+                            Sentiment: {segment.sentiment.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {segment.actionItems && segment.actionItems.length > 0 && (
+                        <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                            <span className="text-xs font-semibold text-green-800">Action Items:</span>
+                          </div>
+                          <ul className="list-disc list-inside text-xs text-green-700 space-y-1">
+                            {segment.actionItems.map((item, i) => (
+                              <li key={i}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {/* Y75: Comments section */}
+                      {comments[segment.id] && comments[segment.id].length > 0 && (
+                        <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span className="text-xs font-semibold text-blue-800">Comments:</span>
+                          </div>
+                          <div className="space-y-1">
+                            {comments[segment.id].map((comment) => (
+                              <div key={comment.id} className="text-xs text-blue-700 bg-white rounded px-2 py-1">
+                                {comment.text}
+                                <span className="ml-2 text-blue-500">
+                                  {new Date(comment.timestamp).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Y75: Add comment input */}
+                      <div className="mt-3 flex items-center space-x-2">
+                        <input
+                          type="text"
+                          placeholder="Add a comment..."
+                          className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                              addComment(segment.id, e.currentTarget.value)
+                              e.currentTarget.value = ''
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            const input = document.querySelector(`input[placeholder="Add a comment..."]`) as HTMLInputElement
+                            if (input?.value.trim()) {
+                              addComment(segment.id, input.value)
+                              input.value = ''
+                            }
+                          }}
+                          className="text-xs bg-blue-100 text-blue-700 rounded px-2 py-1 hover:bg-blue-200 transition-colors"
+                        >
+                          Comment
+                        </button>
+                      </div>
+                        </>
+                      )}
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+          <div className="mt-6">
+            <button
+              className="btn btn-primary"
+              disabled={isTranscribing}
+              onClick={async () => {
+                setIsTranscribing(true);
+                setTimeout(() => {
+                  setTranscript(prev => ([
+                    ...prev,
+                    {
+                      id: `summary-${Date.now()}`,
+                      speaker: 'AI Summary',
+                      speakerId: 0,
+                      text: '[Cloud AI summary would appear here. This is a placeholder for Mistral/Gemini/GPT-4 integration.]',
+                      timestamp: prev.length ? prev[prev.length-1].timestamp + 1 : 0,
+                      duration: 5,
+                      confidence: 0.99,
+                      wordTimestamps: [],
+                      sentiment: 0,
+                      emotion: 'neutral',
+                      intent: 'statement',
+                      urgency: 0,
+                    },
+                  ]));
+                  setIsTranscribing(false);
+                }, 2000);
+              }}
+            >
+              Summarize with Cloud AI (Mistral/Gemini/GPT-4)
+            </button>
+            {isTranscribing && <div className="text-blue-600 mt-2">Summarizing with Cloud AI...</div>}
+          </div>
+        </div>
+    </div>
+  )
+}
+
+export default YonderVoiceWorkflow

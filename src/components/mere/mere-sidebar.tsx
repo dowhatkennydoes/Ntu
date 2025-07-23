@@ -11,15 +11,17 @@ interface MereSidebarProps {
   onViewChange?: (view: 'dashboard' | 'chat') => void
   currentView?: 'dashboard' | 'chat'
   appName?: string
+  externallyCollapsed?: boolean // allow external control if needed
 }
 
-export function MereSidebar({ onViewChange, currentView, appName }: MereSidebarProps) {
+export function MereSidebar({ onViewChange, currentView, appName, externallyCollapsed }: MereSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const collapsed = externallyCollapsed !== undefined ? externallyCollapsed : isCollapsed;
 
   return (
     <motion.div
       initial={false}
-      animate={{ width: isCollapsed ? '4rem' : '20rem' }}
+      animate={{ width: collapsed ? '4rem' : '20rem' }}
       className="relative flex h-full flex-col border-r bg-card"
     >
       {/* Toggle Button */}
@@ -27,7 +29,7 @@ export function MereSidebar({ onViewChange, currentView, appName }: MereSidebarP
         onClick={() => setIsCollapsed(!isCollapsed)}
         className="absolute -right-4 top-8 z-50 flex h-8 w-8 items-center justify-center rounded-full border bg-background shadow-sm"
       >
-        {isCollapsed ? (
+        {collapsed ? (
           <ChevronRightIcon className="h-4 w-4" />
         ) : (
           <ChevronLeftIcon className="h-4 w-4" />
@@ -38,7 +40,7 @@ export function MereSidebar({ onViewChange, currentView, appName }: MereSidebarP
       <div className="p-4 border-b">
         <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <img src="/logo.png" alt="App Logo" width={40} height={40} className="rounded-lg flex-shrink-0" />
-          {!isCollapsed && (
+          {!collapsed && (
             <span className="font-semibold text-xl">NTU</span>
           )}
         </Link>
@@ -46,7 +48,7 @@ export function MereSidebar({ onViewChange, currentView, appName }: MereSidebarP
 
       {/* Content */}
       <div className="flex-1 space-y-4 overflow-auto p-4">
-        {!isCollapsed && onViewChange && (
+        {!collapsed && onViewChange && (
           <div className="space-y-2">
             <button
               onClick={() => onViewChange('dashboard')}
@@ -66,7 +68,7 @@ export function MereSidebar({ onViewChange, currentView, appName }: MereSidebarP
                   : 'hover:bg-accent'
               }`}
             >
-              Chat with Mere
+              Chat
             </button>
           </div>
         )}
