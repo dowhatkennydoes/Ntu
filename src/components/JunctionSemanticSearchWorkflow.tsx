@@ -1598,7 +1598,7 @@ export function JunctionSemanticSearchWorkflow() {
     return filtered
   }
 
-  // J26-J28: Block System Functions
+  // J26-J28: Block system state
   const createBlock = (type: Block['type'], content: any, position: number, parentId?: string): Block => {
     const newBlock: Block = {
       id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -2038,61 +2038,9 @@ export function JunctionSemanticSearchWorkflow() {
                 </div>
               )}
             </div>
-
-
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={privacySettings.auditLogging}
-                        onChange={(e) => updatePrivacySettings({ 
-                          auditLogging: e.target.checked 
-                        })}
-                        className="rounded border-red-300 text-red-600 focus:ring-red-500"
-                      />
-                      <label className="text-xs text-red-700">Enable audit logging</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={privacySettings.dataEncryption}
-                        onChange={(e) => updatePrivacySettings({ 
-                          dataEncryption: e.target.checked 
-                        })}
-                        className="rounded border-red-300 text-red-600 focus:ring-red-500"
-                      />
-                      <label className="text-xs text-red-700">Data encryption</label>
-                    </div>
-                  </div>
-
-                  {/* Access Logs */}
-                  {accessLogs.length > 0 && (
-                    <details className="text-xs">
-                      <summary className="cursor-pointer text-red-700 hover:text-red-800">Recent Access Logs ({accessLogs.length})</summary>
-                      <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                        {accessLogs.slice(0, 5).map((log) => (
-                          <div key={log.id} className="p-2 bg-white rounded border text-xs">
-                            <div className="flex items-center justify-between">
-                              <span className={`px-1 py-0.5 rounded ${
-                                log.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                              }`}>
-                                {log.action}
-                              </span>
-                              <span className="text-gray-500">{log.timestamp.toLocaleTimeString()}</span>
-                            </div>
-                            <p className="text-gray-600 mt-1">{log.resourceType}: {log.resourceId}</p>
-                            {log.reason && <p className="text-gray-500 italic">{log.reason}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         </div>
+        {/* End Privacy Panel */}
 
         {/* Q&A Interface */}
         <div className="lg:col-span-2">
@@ -2129,7 +2077,6 @@ export function JunctionSemanticSearchWorkflow() {
                   {isCollaborating && <span className="ml-1 w-2 h-2 bg-green-500 rounded-full inline-block"></span>}
                 </button>
               </div>
-              
               <button
                 onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
                 className="flex items-center text-sm text-gray-600 hover:text-gray-900"
@@ -2138,7 +2085,6 @@ export function JunctionSemanticSearchWorkflow() {
                 Settings
               </button>
             </div>
-
             {/* Q&A Tab Content */}
             {selectedTab === 'qa' && (
               <>
@@ -2159,7 +2105,6 @@ export function JunctionSemanticSearchWorkflow() {
                         <option value="gemini">Gemini</option>
                       </select>
                     </div>
-                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Response Tone
@@ -2174,7 +2119,6 @@ export function JunctionSemanticSearchWorkflow() {
                         <option value="concise">Concise</option>
                       </select>
                     </div>
-                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Selected Sources
@@ -2183,7 +2127,6 @@ export function JunctionSemanticSearchWorkflow() {
                         {selectedSources.size} of {sources.length} sources
                       </div>
                     </div>
-
                     {/* J5: Customizable AI Summary Options */}
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2219,7 +2162,6 @@ export function JunctionSemanticSearchWorkflow() {
                         className="w-full mt-2 border border-gray-300 rounded px-2 py-1 text-sm"
                       />
                     </div>
-
                     {/* J7: Cross-source Comparison Options */}
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2246,7 +2188,6 @@ export function JunctionSemanticSearchWorkflow() {
                         </select>
                       </div>
                     </div>
-
                     {/* J9: Enhanced LLM Selection */}
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
