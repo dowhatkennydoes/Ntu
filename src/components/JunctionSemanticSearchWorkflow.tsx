@@ -141,10 +141,11 @@ interface ComparisonVisualization {
 }
 
 // J25: AI audit trail interface
+// J25: Enhanced AI audit trail interface
 interface AuditTrailEntry {
   id: string
   timestamp: Date
-  action: 'question_asked' | 'answer_generated' | 'source_retrieved' | 'model_switched'
+  action: 'question_asked' | 'answer_generated' | 'source_retrieved' | 'model_switched' | 'prompt_modified' | 'context_updated' | 'filter_applied' | 'export_generated'
   model: string
   prompt?: string
   sources: string[]
@@ -153,6 +154,44 @@ interface AuditTrailEntry {
     responseTime?: number
     confidence?: number
     retrievalMethod?: string
+    temperature?: number
+    maxTokens?: number
+    topP?: number
+    frequencyPenalty?: number
+    presencePenalty?: number
+    systemPrompt?: string
+    userContext?: string
+    filters?: {
+      dateRange?: { start: Date; end: Date }
+      privacyLevel?: KnowledgeSource['privacyLevel']
+      tags?: string[]
+      authors?: string[]
+    }
+  }
+  userAgent?: string
+  sessionId?: string
+  requestId?: string
+  cost?: {
+    inputTokens: number
+    outputTokens: number
+    totalCost: number
+    currency: string
+  }
+}
+
+// J25: Audit trail summary interface
+interface AuditTrailSummary {
+  totalRequests: number
+  totalTokens: number
+  totalCost: number
+  averageResponseTime: number
+  modelUsage: Record<string, number>
+  topPrompts: Array<{ prompt: string; count: number }>
+  costBreakdown: Record<string, number>
+  performanceMetrics: {
+    averageConfidence: number
+    successRate: number
+    errorRate: number
   }
 }
 
@@ -241,10 +280,10 @@ interface AccessLog {
   reason?: string
 }
 
-// J26: Block system interfaces for Notion-style editing
+// J26: Enhanced Block system interfaces for Notion-style editing
 interface Block {
   id: string
-  type: 'text' | 'heading' | 'list' | 'table' | 'code' | 'image' | 'quote' | 'divider' | 'toggle'
+  type: 'text' | 'heading' | 'list' | 'table' | 'code' | 'image' | 'quote' | 'divider' | 'toggle' | 'callout' | 'kanban' | 'embed'
   content: any
   position: number
   parentId?: string
@@ -252,9 +291,78 @@ interface Block {
   metadata?: {
     level?: number // for headings
     language?: string // for code blocks
-    listType?: 'bullet' | 'numbered' // for lists
+    listType?: 'bullet' | 'numbered' | 'checklist' // for lists
     collapsed?: boolean // for toggles
+    aiGenerated?: boolean // J33: AI block identification
+    version?: number // J35: Block-level version history
+    lastModified?: Date
+    createdBy?: string
+    tags?: string[]
+    comments?: BlockComment[] // J34: Block comments
+    permissions?: {
+      canEdit: boolean
+      canDelete: boolean
+      canComment: boolean
+    }
   }
+}
+
+// J26: Block comment interface
+interface BlockComment {
+  id: string
+  userId: string
+  userName: string
+  content: string
+  timestamp: Date
+  resolved?: boolean
+  replies?: BlockComment[]
+  assignedTo?: string
+}
+
+// J26: Page structure interface
+interface Page {
+  id: string
+  title: string
+  blocks: Block[]
+  metadata: {
+    workspace: string
+    section: string
+    tags: string[]
+    createdBy: string
+    createdAt: Date
+    lastModified: Date
+    version: number
+    template?: string // J39: Page templates
+    collaborators?: Array<{
+      userId: string
+      role: 'view' | 'comment' | 'edit' | 'admin'
+    }>
+  }
+}
+
+// J26: Workspace structure interface
+interface Workspace {
+  id: string
+  name: string
+  sections: Section[]
+  members: Array<{
+    userId: string
+    role: 'view' | 'comment' | 'edit' | 'admin'
+  }>
+  settings: {
+    defaultTemplate?: string
+    autoSave: boolean
+    collaborationEnabled: boolean
+  }
+}
+
+// J26: Section interface
+interface Section {
+  id: string
+  name: string
+  pages: Page[]
+  collapsed?: boolean // J38: Section collapsing
+  parentSection?: string // For nested sections
 }
 
 interface TextBlock extends Block {
@@ -422,6 +530,76 @@ export function JunctionSemanticSearchWorkflow() {
   })
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([])
   const [showPrivacyPanel, setShowPrivacyPanel] = useState(false)
+
+  // J25: AI audit trail state
+  const [auditTrailEntries, setAuditTrailEntries] = useState<AuditTrailEntry[]>([])
+  const [auditTrailSummary, setAuditTrailSummary] = useState<AuditTrailSummary>({
+    totalRequests: 0,
+    totalTokens: 0,
+    totalCost: 0,
+    averageResponseTime: 0,
+    modelUsage: {},
+    topPrompts: [],
+    costBreakdown: {},
+    performanceMetrics: {
+      averageConfidence: 0,
+      successRate: 0,
+      errorRate: 0
+    }
+  })
+  const [showAuditTrail, setShowAuditTrail] = useState(false)
+  const [auditTrailFilter, setAuditTrailFilter] = useState<{
+    action?: AuditTrailEntry['action']
+    model?: string
+    dateRange?: { start: Date; end: Date }
+  }>({})
+
+  // J26-J28: Block system state
+  const [currentPage, setCurrentPage] = useState<Page>({
+    id: 'page-1',
+    title: 'Research Notes',
+    blocks: [],
+    metadata: {
+      workspace: 'default',
+      section: 'research',
+      tags: [],
+      createdBy: 'user-1',
+      createdAt: new Date(),
+      lastModified: new Date(),
+      version: 1
+    }
+  })
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([
+    {
+      id: 'workspace-1',
+      name: 'Research Workspace',
+      sections: [
+        {
+          id: 'section-1',
+          name: 'Research',
+          pages: [],
+          collapsed: false
+        }
+      ],
+      members: [],
+      settings: {
+        autoSave: true,
+        collaborationEnabled: true
+      }
+    }
+  ])
+  const [selectedBlock, setSelectedBlock] = useState<string | null>(null)
+  const [blockDragState, setBlockDragState] = useState<{
+    isDragging: boolean
+    draggedBlockId: string | null
+    dropTargetId: string | null
+  }>({
+    isDragging: false,
+    draggedBlockId: null,
+    dropTargetId: null
+  })
+  const [showBlockMenu, setShowBlockMenu] = useState(false)
+  const [blockMenuPosition, setBlockMenuPosition] = useState<{ x: number; y: number } | null>(null)
 
   // J3: Mock concept extraction for demo
   const extractConceptsFromSource = useCallback((source: KnowledgeSource): ExtractedConcept[] => {
@@ -722,6 +900,39 @@ export function JunctionSemanticSearchWorkflow() {
     if (!currentQuestion.trim() || selectedSources.size === 0) return
     
     setIsProcessing(true)
+    const question = currentQuestion
+    
+    // Add audit trail entry for question asked
+    addAuditTrailEntry({
+      action: 'question_asked',
+      model: selectedModel,
+      prompt: question,
+      sources: Array.from(selectedSources),
+      metadata: {
+        tokensUsed: question.length * 0.3,
+        responseTime: 0,
+        confidence: 0,
+        temperature: 0.7,
+        maxTokens: 1000,
+        topP: 0.9,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        systemPrompt: 'You are a helpful research assistant.',
+        userContext: 'Research session',
+        filters: {
+          privacyLevel: privacySettings.defaultPrivacyLevel
+        }
+      },
+      userAgent: navigator.userAgent,
+      sessionId: 'session-1',
+      requestId: `req-${Date.now()}`,
+      cost: {
+        inputTokens: Math.floor(question.length * 0.3),
+        outputTokens: 0,
+        totalCost: 0,
+        currency: 'USD'
+      }
+    })
     
     // Simulate AI processing delay
     setTimeout(() => {
@@ -735,7 +946,7 @@ export function JunctionSemanticSearchWorkflow() {
           pageNumber: Math.floor(Math.random() * 10) + 1,
           paragraph: index + 1,
           confidence: 0.85 + Math.random() * 0.15,
-          text: `This section discusses ${currentQuestion.toLowerCase().includes('transformer') ? 'transformer architectures and their applications' : 'the relevant concepts'} in detail...`,
+          text: `This section discusses ${question.toLowerCase().includes('transformer') ? 'transformer architectures and their applications' : 'the relevant concepts'} in detail...`,
           context: 'The surrounding context provides additional insights about the methodology and implications.',
           highlightedTerms: ['transformer', 'attention', 'architecture'],
           conceptsReferenced: ['Transformer Architecture', 'Attention Mechanism']
@@ -745,7 +956,7 @@ export function JunctionSemanticSearchWorkflow() {
       // J3: Generate cross-source insights
       const crossSourceInsight: CrossSourceInsight = {
         id: `insight-${Date.now()}`,
-        topic: currentQuestion,
+        topic: question,
         sources: selectedSourcesList,
         agreements: ['All sources agree on the importance of attention mechanisms'],
         contradictions: ['Sources differ on optimal model size'],
@@ -753,11 +964,11 @@ export function JunctionSemanticSearchWorkflow() {
         synthesisScore: 0.78
       }
 
-      const mockAnswer = `Based on analysis across ${selectedSources.size} sources, ${currentQuestion.toLowerCase().includes('transformer') ? 'Transformer architectures represent a paradigm shift in NLP' : 'the topic demonstrates significant complexity'}. Key concepts identified include: ${extractedConcepts.slice(0, 3).map(c => c.term).join(', ')}. ${responseTone === 'concise' ? 'The evidence strongly supports this conclusion.' : responseTone === 'analytical' ? 'From multiple analytical perspectives, we can identify several key patterns and relationships.' : 'This comprehensive analysis reveals nuanced insights across technical, practical, and theoretical dimensions.'}`
+      const mockAnswer = `Based on analysis across ${selectedSources.size} sources, ${question.toLowerCase().includes('transformer') ? 'Transformer architectures represent a paradigm shift in NLP' : 'the topic demonstrates significant complexity'}. Key concepts identified include: ${extractedConcepts.slice(0, 3).map(c => c.term).join(', ')}. ${responseTone === 'concise' ? 'The evidence strongly supports this conclusion.' : responseTone === 'analytical' ? 'From multiple analytical perspectives, we can identify several key patterns and relationships.' : 'This comprehensive analysis reveals nuanced insights across technical, practical, and theoretical dimensions.'}`
 
       const newResponse: QAResponse = {
         id: `qa-${Date.now()}`,
-        question: currentQuestion,
+        question: question,
         answer: mockAnswer,
         citations: mockCitations,
         timestamp: new Date(),
@@ -768,20 +979,6 @@ export function JunctionSemanticSearchWorkflow() {
         crossSourceInsights: [crossSourceInsight],
         confidence: 0.85 + Math.random() * 0.15, // J11: Citation confidence
         unusedSources: sources.filter(s => !Array.from(selectedSources).includes(s.id)).map(s => s.name), // J24: Source transparency
-        auditTrail: [{ // J25: AI audit trail
-          id: `audit-${Date.now()}`,
-          timestamp: new Date(),
-          action: 'answer_generated',
-          model: selectedModel,
-          prompt: currentQuestion,
-          sources: Array.from(selectedSources),
-          metadata: {
-            tokensUsed: Math.floor(Math.random() * 1000) + 500,
-            responseTime: 2500,
-            confidence: 0.85 + Math.random() * 0.15,
-            retrievalMethod: 'semantic_search'
-          }
-        }],
         followUpSuggestions: [ // J12: Topic suggestions
           `What are the implications of ${extractedConcepts[0]?.term || 'this'}?`,
           `How does ${extractedConcepts[1]?.term || 'this'} compare to other approaches?`,
@@ -789,6 +986,36 @@ export function JunctionSemanticSearchWorkflow() {
         ],
         exportFormats: [] // J20: Export formats (will be populated on demand)
       }
+      
+      // Add audit trail entry for answer generated
+      addAuditTrailEntry({
+        action: 'answer_generated',
+        model: selectedModel,
+        prompt: question,
+        sources: Array.from(selectedSources),
+        metadata: {
+          tokensUsed: mockAnswer.length * 0.3 + question.length * 0.3,
+          responseTime: 2500,
+          confidence: newResponse.confidence,
+          retrievalMethod: 'semantic_search',
+          temperature: 0.7,
+          maxTokens: 1000,
+          topP: 0.9,
+          frequencyPenalty: 0,
+          presencePenalty: 0,
+          systemPrompt: 'You are a helpful research assistant.',
+          userContext: 'Research session'
+        },
+        userAgent: navigator.userAgent,
+        sessionId: 'session-1',
+        requestId: `req-${Date.now()}`,
+        cost: {
+          inputTokens: Math.floor(question.length * 0.3),
+          outputTokens: Math.floor(mockAnswer.length * 0.3),
+          totalCost: (Math.floor(question.length * 0.3) * 0.00003) + (Math.floor(mockAnswer.length * 0.3) * 0.00006),
+          currency: 'USD'
+        }
+      })
       
       setQAHistory(prev => [newResponse, ...prev])
       setCrossSourceInsights(prev => [...prev, crossSourceInsight])
@@ -799,7 +1026,7 @@ export function JunctionSemanticSearchWorkflow() {
       if (isCollaborating && collaborativeSession) {
         setCollaborativeSession(prev => prev ? {
           ...prev,
-          sharedQuestions: [...prev.sharedQuestions, currentQuestion]
+          sharedQuestions: [...prev.sharedQuestions, question]
         } : null)
       }
       
@@ -1285,6 +1512,324 @@ export function JunctionSemanticSearchWorkflow() {
     })
   }
 
+  // J25: AI Audit Trail Functions
+  const addAuditTrailEntry = (entry: Omit<AuditTrailEntry, 'id' | 'timestamp'>) => {
+    const newEntry: AuditTrailEntry = {
+      ...entry,
+      id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date()
+    }
+    
+    setAuditTrailEntries(prev => [newEntry, ...prev])
+    updateAuditTrailSummary()
+  }
+
+  const updateAuditTrailSummary = () => {
+    const entries = auditTrailEntries
+    
+    const totalRequests = entries.length
+    const totalTokens = entries.reduce((sum, entry) => sum + (entry.metadata.tokensUsed || 0), 0)
+    const totalCost = entries.reduce((sum, entry) => sum + (entry.cost?.totalCost || 0), 0)
+    const averageResponseTime = entries.length > 0 
+      ? entries.reduce((sum, entry) => sum + (entry.metadata.responseTime || 0), 0) / entries.length 
+      : 0
+
+    const modelUsage: Record<string, number> = {}
+    entries.forEach(entry => {
+      modelUsage[entry.model] = (modelUsage[entry.model] || 0) + 1
+    })
+
+    const promptCounts: Record<string, number> = {}
+    entries.forEach(entry => {
+      if (entry.prompt) {
+        promptCounts[entry.prompt] = (promptCounts[entry.prompt] || 0) + 1
+      }
+    })
+    const topPrompts = Object.entries(promptCounts)
+      .map(([prompt, count]) => ({ prompt, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    const costBreakdown: Record<string, number> = {}
+    entries.forEach(entry => {
+      if (entry.cost) {
+        costBreakdown[entry.model] = (costBreakdown[entry.model] || 0) + entry.cost.totalCost
+      }
+    })
+
+    const averageConfidence = entries.length > 0
+      ? entries.reduce((sum, entry) => sum + (entry.metadata.confidence || 0), 0) / entries.length
+      : 0
+
+    setAuditTrailSummary({
+      totalRequests,
+      totalTokens,
+      totalCost,
+      averageResponseTime,
+      modelUsage,
+      topPrompts,
+      costBreakdown,
+      performanceMetrics: {
+        averageConfidence,
+        successRate: 0.95, // Mock value
+        errorRate: 0.05 // Mock value
+      }
+    })
+  }
+
+  const getFilteredAuditTrail = () => {
+    let filtered = auditTrailEntries
+
+    if (auditTrailFilter.action) {
+      filtered = filtered.filter(entry => entry.action === auditTrailFilter.action)
+    }
+
+    if (auditTrailFilter.model) {
+      filtered = filtered.filter(entry => entry.model === auditTrailFilter.model)
+    }
+
+    if (auditTrailFilter.dateRange) {
+      filtered = filtered.filter(entry => 
+        entry.timestamp >= auditTrailFilter.dateRange!.start && 
+        entry.timestamp <= auditTrailFilter.dateRange!.end
+      )
+    }
+
+    return filtered
+  }
+
+  // J26-J28: Block System Functions
+  const createBlock = (type: Block['type'], content: any, position: number, parentId?: string): Block => {
+    const newBlock: Block = {
+      id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      content,
+      position,
+      parentId,
+      children: [],
+      metadata: {
+        version: 1,
+        lastModified: new Date(),
+        createdBy: 'user-1',
+        aiGenerated: false,
+        permissions: {
+          canEdit: true,
+          canDelete: true,
+          canComment: true
+        }
+      }
+    }
+
+    return newBlock
+  }
+
+  const addBlockToPage = (block: Block) => {
+    setCurrentPage(prev => ({
+      ...prev,
+      blocks: [...prev.blocks, block].sort((a, b) => a.position - b.position),
+      metadata: {
+        ...prev.metadata,
+        lastModified: new Date(),
+        version: prev.metadata.version + 1
+      }
+    }))
+  }
+
+  const updateBlock = (blockId: string, updates: Partial<Block>) => {
+    setCurrentPage(prev => ({
+      ...prev,
+      blocks: prev.blocks.map(block => 
+        block.id === blockId 
+          ? {
+              ...block,
+              ...updates,
+              metadata: {
+                ...block.metadata,
+                ...updates.metadata,
+                lastModified: new Date(),
+                version: (block.metadata?.version || 1) + 1
+              }
+            }
+          : block
+      ),
+      metadata: {
+        ...prev.metadata,
+        lastModified: new Date(),
+        version: prev.metadata.version + 1
+      }
+    }))
+  }
+
+  const deleteBlock = (blockId: string) => {
+    setCurrentPage(prev => ({
+      ...prev,
+      blocks: prev.blocks.filter(block => block.id !== blockId),
+      metadata: {
+        ...prev.metadata,
+        lastModified: new Date(),
+        version: prev.metadata.version + 1
+      }
+    }))
+  }
+
+  const moveBlock = (blockId: string, newPosition: number, newParentId?: string) => {
+    setCurrentPage(prev => {
+      const updatedBlocks = prev.blocks.map(block => {
+        if (block.id === blockId) {
+          return {
+            ...block,
+            position: newPosition,
+            parentId: newParentId,
+            metadata: {
+              ...block.metadata,
+              lastModified: new Date(),
+              version: (block.metadata?.version || 1) + 1
+            }
+          }
+        }
+        return block
+      })
+
+      return {
+        ...prev,
+        blocks: updatedBlocks.sort((a, b) => a.position - b.position),
+        metadata: {
+          ...prev.metadata,
+          lastModified: new Date(),
+          version: prev.metadata.version + 1
+        }
+      }
+    })
+  }
+
+  const handleBlockDragStart = (blockId: string) => {
+    setBlockDragState({
+      isDragging: true,
+      draggedBlockId: blockId,
+      dropTargetId: null
+    })
+  }
+
+  const handleBlockDragOver = (blockId: string) => {
+    setBlockDragState(prev => ({
+      ...prev,
+      dropTargetId: blockId
+    }))
+  }
+
+  const handleBlockDrop = (targetBlockId: string) => {
+    if (blockDragState.draggedBlockId && blockDragState.draggedBlockId !== targetBlockId) {
+      const draggedBlock = currentPage.blocks.find(b => b.id === blockDragState.draggedBlockId)
+      const targetBlock = currentPage.blocks.find(b => b.id === targetBlockId)
+      
+      if (draggedBlock && targetBlock) {
+        // Move the dragged block to the position after the target block
+        const newPosition = targetBlock.position + 1
+        
+        // Update positions of blocks that come after the target
+        const updatedBlocks = currentPage.blocks.map(block => {
+          if (block.position >= newPosition && block.id !== draggedBlock.id) {
+            return { ...block, position: block.position + 1 }
+          }
+          return block
+        })
+
+        // Update the dragged block
+        const finalBlocks = updatedBlocks.map(block => 
+          block.id === draggedBlock.id 
+            ? { ...block, position: newPosition }
+            : block
+        )
+
+        setCurrentPage(prev => ({
+          ...prev,
+          blocks: finalBlocks.sort((a, b) => a.position - b.position),
+          metadata: {
+            ...prev.metadata,
+            lastModified: new Date(),
+            version: prev.metadata.version + 1
+          }
+        }))
+      }
+    }
+
+    setBlockDragState({
+      isDragging: false,
+      draggedBlockId: null,
+      dropTargetId: null
+    })
+  }
+
+  const addBlockComment = (blockId: string, content: string) => {
+    const newComment: BlockComment = {
+      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      userId: 'user-1',
+      userName: 'Current User',
+      content,
+      timestamp: new Date()
+    }
+
+    updateBlock(blockId, {
+      metadata: {
+        ...currentPage.blocks.find(b => b.id === blockId)?.metadata,
+        comments: [
+          ...(currentPage.blocks.find(b => b.id === blockId)?.metadata?.comments || []),
+          newComment
+        ]
+      }
+    })
+  }
+
+  const createTextBlock = () => {
+    const newBlock = createBlock('text', {
+      text: '',
+      formatting: []
+    }, currentPage.blocks.length)
+    addBlockToPage(newBlock)
+    return newBlock
+  }
+
+  const createHeadingBlock = (level: number = 1) => {
+    const newBlock = createBlock('heading', {
+      text: '',
+      level
+    }, currentPage.blocks.length)
+    addBlockToPage(newBlock)
+    return newBlock
+  }
+
+  const createListBlock = (listType: 'bullet' | 'numbered' | 'checklist' = 'bullet') => {
+    const newBlock = createBlock('list', {
+      items: [{ text: '', checked: false }]
+    }, currentPage.blocks.length)
+    addBlockToPage({
+      ...newBlock,
+      metadata: {
+        ...newBlock.metadata,
+        listType
+      }
+    })
+    return newBlock
+  }
+
+  const createCodeBlock = (language: string = 'javascript') => {
+    const newBlock = createBlock('code', {
+      code: '',
+      language
+    }, currentPage.blocks.length)
+    addBlockToPage(newBlock)
+    return newBlock
+  }
+
+  const createTableBlock = () => {
+    const newBlock = createBlock('table', {
+      headers: ['Column 1', 'Column 2'],
+      rows: [['', '']]
+    }, currentPage.blocks.length)
+    addBlockToPage(newBlock)
+    return newBlock
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -1490,6 +2035,11 @@ export function JunctionSemanticSearchWorkflow() {
                       <label className="text-xs text-red-700">Auto-archive expired content</label>
                     </div>
                   </div>
+                </div>
+              )}
+            </div>
+
+
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">

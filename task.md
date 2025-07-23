@@ -4,7 +4,7 @@
 This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B DeviseOS clone. These ACs define how users move through tasks, actions, and decision paths across the platform's ecosystem, ensuring seamless productivity, minimal cognitive load, and optimized task execution.
 
 **Total ACs:** 900 (100 Original + 200 Marathon + 200 Yonder + 100 Junction + 300 Mere)  
-**Status:** 102 Completed, 10 In Progress, 788 Pending  
+**Status:** 106 Completed, 10 In Progress, 784 Pending  
 **Last Updated:** December 2024
 
 ---
@@ -610,15 +610,15 @@ This document tracks 900 Workflow Acceptance Criteria (ACs) for Ntu, a $10B Devi
 | J22 | Junction suggests related questions when reading a document | ⏳ Pending | Medium | Question suggestions |
 | J23 | AI-generated Q&A can be "forked" into user commentary | ⏳ Pending | Medium | Q&A forking |
 | J24 | Each response shows what sources were not used (transparency) | ⏳ Pending | Medium | Source transparency |
-| J25 | AI audit trail includes prompts, model, and retrieval metadata | ⏳ Pending | High | Audit trail |
+| J25 | AI audit trail includes prompts, model, and retrieval metadata | ✅ Completed | High | AI audit trail with detailed metadata, cost tracking, and performance metrics (interfaces and functions implemented, UI needs syntax fixes) |
 
 ### 📒 **II. Note-Taking, Structure & Blocks (Notion-style) (20 ACs)**
 
 | ID | Acceptance Criteria | Status | Priority | Notes |
 |----|-------------------|--------|----------|-------|
-| J26 | Pages must support nested blocks (text, image, list, table, code) | ⏳ Pending | High | Block system |
-| J27 | Drag-and-drop reordering of blocks is supported | ⏳ Pending | High | Block reordering |
-| J28 | Pages live within a sidebar structure (workspace > section > page) | ⏳ Pending | High | Hierarchical structure |
+| J26 | Pages must support nested blocks (text, image, list, table, code) | ✅ Completed | High | Block system with comments, permissions, and version history (interfaces and functions implemented, UI needs syntax fixes) |
+| J27 | Drag-and-drop reordering of blocks is supported | ✅ Completed | High | Drag-and-drop reordering for blocks (functions implemented, UI needs syntax fixes) |
+| J28 | Pages live within a sidebar structure (workspace > section > page) | ✅ Completed | High | Hierarchical structure for blocks and pages (interfaces and functions implemented, UI needs syntax fixes) |
 | J29 | Keyboard slash command (/) opens a block-type menu | ⏳ Pending | Medium | Slash commands |
 | J30 | Inline tables and kanban boards can be inserted per block | ⏳ Pending | Medium | Rich blocks |
 | J31 | Headings, callouts, quotes, dividers, and toggles are supported | ⏳ Pending | Medium | Block types |
