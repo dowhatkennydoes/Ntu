@@ -149,6 +149,16 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
   const [notebookEntries, setNotebookEntries] = useState<QAAnswer[]>([]);
   const [showDropSuccess, setShowDropSuccess] = useState(false);
 
+  // Enhanced UX state
+  const [currentWorkflow, setCurrentWorkflow] = useState<'upload' | 'ask' | 'explore'>('upload');
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [progressStep, setProgressStep] = useState(1);
+  const [savedSearches, setSavedSearches] = useState<string[]>([]);
+  const [quickActions, setQuickActions] = useState<boolean>(false);
+  const [workspaceLayout, setWorkspaceLayout] = useState<'split' | 'focused' | 'compact'>('focused');
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [favoriteAnswers, setFavoriteAnswers] = useState<string[]>([]);
+
   // Mock source content
   const mockSourceText: Record<string, string[]> = {
     'SampleDoc.pdf': Array.from({ length: 10 }, (_, p) =>
@@ -216,35 +226,46 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
     }));
   };
 
-  // Q&A logic
+  // Enhanced Q&A logic with better feedback
   const handleAsk = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
+    
+    // Add to search history
+    setSearchHistory(prev => [input, ...prev.filter(h => h !== input)].slice(0, 10));
+    
     const citations = getMockCitations();
-    setQaHistory([
-      {
-        id: Date.now().toString(),
-        question: input,
-        quote: '"[Sample quote from source document related to the question]"',
-        analysis: `[${summaryOptions.tone} | ${summaryOptions.length}${summaryOptions.focus ? ' | Focus: ' + summaryOptions.focus : ''}] [Sample analysis of the answer, explaining context and reasoning.]`,
-        critique: '[Optional critique or alternative perspective.]',
-        citations: citations,
-        summaryOptions: { ...summaryOptions, llm: summaryOptions.llm || 'GPT-4' },
-        crossSourceComparison: citations.length > 1 ? citations.map(c => ({
-          source: c.source,
-          quote: `"[Mock quote from ${c.source}]"`,
-          insight: `[Mock insight from ${c.source}]`,
-        })) : undefined,
-        followUps: [],
-        followUpSuggestions: [
-          'Can you elaborate on the methodology?',
-          'What are the limitations?',
-          'How does this compare to other sources?',
-        ],
-      },
-      ...qaHistory,
-    ]);
+    const newAnswer = {
+      id: Date.now().toString(),
+      question: input,
+      quote: '"[Sample quote from source document related to the question]"',
+      analysis: `[${summaryOptions.tone} | ${summaryOptions.length}${summaryOptions.focus ? ' | Focus: ' + summaryOptions.focus : ''}] [Sample analysis of the answer, explaining context and reasoning.]`,
+      critique: '[Optional critique or alternative perspective.]',
+      citations: citations,
+      summaryOptions: { ...summaryOptions, llm: summaryOptions.llm || 'GPT-4' },
+      crossSourceComparison: citations.length > 1 ? citations.map(c => ({
+        source: c.source,
+        quote: `"[Mock quote from ${c.source}]"`,
+        insight: `[Mock insight from ${c.source}]`,
+      })) : undefined,
+      followUps: [],
+      followUpSuggestions: [
+        'Can you elaborate on the methodology?',
+        'What are the limitations?',
+        'How does this compare to other sources?',
+      ],
+    };
+    
+    setQaHistory([newAnswer, ...qaHistory]);
     setInput('');
+    
+    // Auto-scroll to new answer
+    setTimeout(() => {
+      document.querySelector(`[data-answer-id="${newAnswer.id}"]`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 100);
   };
 
   const handleFollowUp = (parentId: string) => {
@@ -314,10 +335,52 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
     setTimeout(() => setShowCitedBadge(false), 2000);
   };
 
+  // Workflow helpers
+  const getWorkflowProgress = () => {
+    if (sources.length === 0) return { step: 1, label: 'Upload Sources', description: 'Start by uploading your knowledge documents' };
+    if (qaHistory.length === 0) return { step: 2, label: 'Ask Questions', description: 'Ask your first question about the sources' };
+    return { step: 3, label: 'Explore Insights', description: 'Dive deeper with follow-ups and annotations' };
+  };
+
+  const currentProgress = getWorkflowProgress();
+
+  // Enhanced keyboard shortcuts
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey) {
+        switch (e.key) {
+          case 'k':
+            e.preventDefault();
+            document.querySelector<HTMLInputElement>('input[placeholder*="Ask a question"]')?.focus();
+            break;
+          case 'u':
+            e.preventDefault();
+            fileInputRef.current?.click();
+            break;
+          case 's':
+            e.preventDefault();
+            if (input.trim()) {
+              setSavedSearches(prev => [...new Set([input, ...prev])]);
+            }
+            break;
+        }
+      }
+      if (e.key === 'Escape') {
+        setFollowUpFor(null);
+        setShowSuggestionPopover(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [input]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Improved Header with better visual hierarchy */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 transition-all duration-300 ${
+      workspaceLayout === 'compact' ? 'text-sm' : ''
+    }`}>
+      {/* Enhanced Header with workflow guidance */}
+      <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center space-x-4">
@@ -332,18 +395,114 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                {sources.length} sources uploaded
-              </span>
-              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {qaHistory.length} Q&A sessions
-              </span>
+              {/* Workflow Progress Indicator */}
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
+                  {[1, 2, 3].map(step => (
+                    <div
+                      key={step}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        step <= currentProgress.step
+                          ? 'bg-blue-500 scale-110'
+                          : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-medium text-gray-600">
+                  Step {currentProgress.step}: {currentProgress.label}
+                </span>
+              </div>
+              
+              {/* Layout Controls */}
+              <div className="flex items-center space-x-1 border rounded-lg p-1">
+                {(['focused', 'split', 'compact'] as const).map(layout => (
+                  <button
+                    key={layout}
+                    onClick={() => setWorkspaceLayout(layout)}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      workspaceLayout === layout
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {layout}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Quick Actions */}
+              <button
+                onClick={() => setQuickActions(!quickActions)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Quick Actions (Cmd+K)"
+              >
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Quick Actions Modal */}
+      {quickActions && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center pt-32 z-50" onClick={() => setQuickActions(false)}>
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-2xl mx-4" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+              <p className="text-sm text-gray-600 mt-1">Keyboard shortcuts and quick commands</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => { fileInputRef.current?.click(); setQuickActions(false); }}
+                  className="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Upload Sources</div>
+                  <div className="text-sm text-gray-600 mt-1">Cmd/Ctrl + U</div>
+                </button>
+                <button
+                  onClick={() => { 
+                    document.querySelector<HTMLInputElement>('input[placeholder*="Ask a question"]')?.focus(); 
+                    setQuickActions(false);
+                  }}
+                  className="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Focus Search</div>
+                  <div className="text-sm text-gray-600 mt-1">Cmd/Ctrl + K</div>
+                </button>
+                <button
+                  onClick={() => { 
+                    if (input.trim()) setSavedSearches(prev => [...new Set([input, ...prev])]);
+                    setQuickActions(false);
+                  }}
+                  className="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Save Search</div>
+                  <div className="text-sm text-gray-600 mt-1">Cmd/Ctrl + S</div>
+                </button>
+                <button
+                  onClick={() => { 
+                    setFollowUpFor(null); 
+                    setShowSuggestionPopover(false);
+                    setQuickActions(false);
+                  }}
+                  className="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Close Dialogs</div>
+                  <div className="text-sm text-gray-600 mt-1">Escape</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 ${
+        workspaceLayout === 'split' ? 'grid grid-cols-2 gap-8' : ''
+      }`}>
         {/* Improved Knowledge Sources Section */}
         <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -495,14 +654,72 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
                 </div>
               </div>
             </div>
-            {/* Enhanced question input */}
+            {/* Search History */}
+            {searchHistory.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-gray-700">Recent Searches</h4>
+                  <button
+                    onClick={() => setSearchHistory([])}
+                    className="text-xs text-gray-500 hover:text-red-600 transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {searchHistory.slice(0, 5).map((search, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setInput(search)}
+                      className="text-xs bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-700 px-2 py-1 rounded transition-colors border hover:border-blue-200"
+                    >
+                      {search.length > 30 ? search.slice(0, 30) + '...' : search}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Saved Searches */}
+            {savedSearches.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-gray-700 flex items-center space-x-1">
+                    <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    <span>Saved Searches</span>
+                  </h4>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {savedSearches.slice(0, 3).map((search, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setInput(search)}
+                      className="text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-800 px-2 py-1 rounded transition-colors border border-yellow-200 hover:border-yellow-300 flex items-center space-x-1"
+                    >
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                      <span>{search.length > 25 ? search.slice(0, 25) + '...' : search}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Enhanced question input with smart suggestions */}
             <form onSubmit={handleAsk} className="relative">
               <div className="flex gap-3 mb-6">
                 <div className="flex-1 relative">
                   <input
                     type="text"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
-                    placeholder="Ask a question about your knowledge sources... (use @ for entity suggestions)"
+                    className={`w-full border rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 transition-all duration-200 ${
+                      currentProgress.step === 2 && qaHistory.length === 0
+                        ? 'border-blue-300 shadow-md animate-pulse'
+                        : 'border-gray-300'
+                    }`}
+                    placeholder={`${currentProgress.step === 2 ? '👋 ' : ''}Ask a question about your knowledge sources... (use @ for entity suggestions)`}
                     value={input}
                     onChange={e => {
                       setInput(e.target.value);
@@ -591,8 +808,32 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
             </section>
           )}
           <div className="space-y-6">
-            {qaHistory.map(ans => (
+            {qaHistory.length === 0 && sources.length > 0 && (
+              <div className="text-center py-12 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready for your first question!</h3>
+                <p className="text-gray-600 mb-4">Your sources are processed and ready. Ask anything about your knowledge base.</p>
+                <div className="flex flex-wrap justify-center gap-2 text-sm">
+                  {['What are the main themes?', 'Summarize key findings', 'What are the conclusions?'].map(suggestion => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setInput(suggestion)}
+                      className="bg-white border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {qaHistory.map((ans, index) => (
               <div
+                key={ans.id}
+                data-answer-id={ans.id}
                 onMouseUp={e => {
                   const selection = window.getSelection();
                   if (selection && selection.toString().length > 0) {
@@ -603,7 +844,9 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
                     setHighlightedText('');
                   }
                 }}
-                className="bg-white border rounded p-4 shadow-sm relative group"
+                className={`bg-white border rounded-xl p-6 shadow-sm relative group transition-all duration-300 hover:shadow-md ${
+                  index === 0 ? 'ring-2 ring-blue-200 border-blue-200' : 'border-gray-200'
+                }`}
               >
                 {/* J15: Drag handle (mock) */}
                 <div
@@ -616,7 +859,51 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
                 >
                   ≡
                 </div>
-                <div className="font-semibold text-blue-800 mb-1">Q: {ans.question}</div>
+                {/* Enhanced question header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="font-semibold text-blue-900 text-lg">{ans.question}</h3>
+                    </div>
+                    {index === 0 && (
+                      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 mb-2">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Latest Answer
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setFavoriteAnswers(prev => 
+                        prev.includes(ans.id) 
+                          ? prev.filter(id => id !== ans.id)
+                          : [...prev, ans.id]
+                      )}
+                      className={`p-2 rounded-lg transition-colors ${
+                        favoriteAnswers.includes(ans.id)
+                          ? 'text-red-500 bg-red-50 hover:bg-red-100'
+                          : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                      }`}
+                      title="Add to favorites"
+                    >
+                      <svg className="w-4 h-4" fill={favoriteAnswers.includes(ans.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </button>
+                    <button className="p-2 rounded-lg text-gray-400 hover:text-gray-600 transition-colors" title="Share answer">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
                 {/* J5: Show summary options used */}
                 <div className="mb-2 text-xs text-gray-500">
                   <span>Summary: {ans.summaryOptions.tone}, {ans.summaryOptions.length}{ans.summaryOptions.focus ? `, Focus: ${ans.summaryOptions.focus}` : ''}, LLM: {ans.summaryOptions.llm || 'GPT-4'}</span>
@@ -1100,48 +1387,145 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
           </div>
         </section>
       </main>
-      {/* Add Notebook/Notes drop zone at the bottom of the main content */}
-      <div
-        onDragOver={e => { e.preventDefault(); setNotebookDropActive(true); }}
-        onDragLeave={() => setNotebookDropActive(false)}
-        onDrop={e => {
-          e.preventDefault();
-          setNotebookDropActive(false);
-          if (draggedAnswer) {
-            setNotebookEntries(entries => [draggedAnswer, ...entries]);
-            setShowDropSuccess(true);
-            setTimeout(() => setShowDropSuccess(false), 1500);
-          }
-          setDraggedAnswer(null);
-        }}
-        className={`fixed bottom-8 right-8 w-72 h-24 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all duration-200 shadow-lg bg-white z-50 ${notebookDropActive ? 'border-blue-500 bg-blue-50 scale-105' : 'border-gray-300 hover:border-blue-400'}`}
-        style={{ pointerEvents: 'auto' }}
-      >
-        <span className="text-lg font-semibold text-blue-700 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 20h9" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.5 3.5a2.121 2.121 0 113 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>
-          Drop here to add to Notebook/Notes
-        </span>
-        {showDropSuccess && (
-          <span className="mt-2 text-green-700 bg-green-100 px-3 py-1 rounded-full flex items-center gap-1 animate-fade-in-out">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-            Added!
-          </span>
-        )}
-      </div>
-      {/* Optionally, show a mock Notebook/Notes list for demo */}
-      {notebookEntries.length > 0 && (
-        <div className="fixed bottom-36 right-8 w-72 max-h-64 overflow-y-auto rounded-xl border bg-white shadow-lg z-40">
-          <div className="px-4 py-2 border-b font-semibold text-blue-800">Notebook/Notes</div>
-          <ul className="divide-y">
-            {notebookEntries.map(entry => (
-              <li key={entry.id} className="px-4 py-2 text-sm">
-                <span className="font-semibold text-blue-700">Q:</span> {entry.question}
-                <div className="text-xs text-gray-500 mt-1">{entry.quote}</div>
-              </li>
-            ))}
-          </ul>
+      {/* Consolidated Notebook/Notes area - only show when needed */}
+      {(notebookDropActive || notebookEntries.length > 0) && (
+        <div 
+          onDragOver={e => { e.preventDefault(); setNotebookDropActive(true); }}
+          onDragLeave={() => setNotebookDropActive(false)}
+          onDrop={e => {
+            e.preventDefault();
+            setNotebookDropActive(false);
+            if (draggedAnswer) {
+              setNotebookEntries(entries => [draggedAnswer, ...entries]);
+              setShowDropSuccess(true);
+              setTimeout(() => setShowDropSuccess(false), 1500);
+            }
+            setDraggedAnswer(null);
+          }}
+          className={`fixed bottom-8 right-8 w-72 rounded-xl border bg-white shadow-lg z-40 transition-all duration-200 ${
+            notebookDropActive ? 'border-blue-500 bg-blue-50 scale-105' : 'border-gray-300'
+          }`}
+        >
+          {/* Drop zone header */}
+          <div className="px-4 py-3 border-b bg-blue-50 rounded-t-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 20h9" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.5 3.5a2.121 2.121 0 113 3L7 19.5 3 21l1.5-4L16.5 3.5z" />
+                </svg>
+                Notebook/Notes
+              </span>
+              {notebookEntries.length > 0 && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  {notebookEntries.length}
+                </span>
+              )}
+            </div>
+            {notebookDropActive && (
+              <div className="mt-2 text-xs text-blue-600">
+                Drop answers here to save for later
+              </div>
+            )}
+          </div>
+          
+          {/* Notebook entries list */}
+          {notebookEntries.length > 0 && (
+            <div className="max-h-48 overflow-y-auto">
+              <ul className="divide-y">
+                {notebookEntries.map(entry => (
+                  <li key={entry.id} className="px-4 py-2 text-sm hover:bg-gray-50">
+                    <span className="font-semibold text-blue-700">Q:</span> {entry.question}
+                    <div className="text-xs text-gray-500 mt-1 truncate">{entry.quote}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {/* Drop success message */}
+          {showDropSuccess && (
+            <div className="px-4 py-2 bg-green-50 border-t border-green-200 rounded-b-xl">
+              <span className="text-sm text-green-700 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Added to notebook!
+              </span>
+            </div>
+          )}
         </div>
       )}
+        {/* Smart Floating Action Button */}
+        <div className="fixed bottom-8 left-8 z-40">
+          <div className="relative">
+            {/* Context-aware action button */}
+            {sources.length === 0 ? (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group"
+                title="Upload your first source"
+              >
+                <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </button>
+            ) : qaHistory.length === 0 ? (
+              <button
+                onClick={() => document.querySelector<HTMLInputElement>('input[placeholder*="Ask a question"]')?.focus()}
+                className="w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group"
+                title="Ask your first question"
+              >
+                <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group"
+                title="Back to top"
+              >
+                <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
+            )}
+            
+            {/* Progress indicator on FAB */}
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center">
+              <span className="text-xs font-bold text-gray-700">{currentProgress.step}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Simplified onboarding tip - only show briefly */}
+        {showOnboarding && (
+          <div className="fixed bottom-24 right-8 max-w-xs bg-white rounded-lg shadow-md border border-gray-200 p-3 z-30">
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-gray-600">
+                  {sources.length === 0 && "Upload documents to get started"}
+                  {sources.length > 0 && qaHistory.length === 0 && "Ask questions to explore your documents"}
+                  {qaHistory.length > 0 && "Drag answers to save them for later"}
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowOnboarding(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 };

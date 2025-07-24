@@ -53,7 +53,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className + ' bg-background text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen'}>
+      <body className={inter.className + ' bg-background text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen'} suppressHydrationWarning>
         <Providers>
           {children}
           {/* Floating Mere Icon (all non-home views) */}

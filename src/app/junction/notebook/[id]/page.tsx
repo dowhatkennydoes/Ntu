@@ -532,22 +532,32 @@ function BlockContent({ block, onChange, inputRef, onToggle }: { block: any, onC
   return null;
 }
 
-const notebookTitles: Record<string, string> = {
-  demo: 'Demo Notebook',
-  '1': 'AI Research Notes',
-  '2': 'Personal Journal',
-  '3': 'Project X Docs',
-};
-
-export default function NotebookDemoPage({ params }: { params: { id: string } }) {
-  const title = notebookTitles[params.id];
-  if (!title) return notFound();
-
+export default async function NotebookDemoPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  
   // J42: Mock real-time collaboration state
   const [collaborators] = useState([
-    { id: '1', name: 'Alice', color: 'bg-blue-400', x: 60, y: 12 },
-    { id: '2', name: 'Bob', color: 'bg-green-400', x: 120, y: 12 },
+    { id: 'u1', name: 'Alice', avatar: '👩‍💻', status: 'online', cursor: { x: 100, y: 200 } },
+    { id: 'u2', name: 'Bob', avatar: '👨‍💻', status: 'online', cursor: { x: 300, y: 150 } },
+    { id: 'u3', name: 'Charlie', avatar: '👩‍🔬', status: 'away', cursor: null },
   ]);
+
+  const [snippets, setSnippets] = useState([
+    { id: 's1', title: 'AI Co-writing Tips', content: 'Use /ai to get writing suggestions...', tags: ['ai', 'writing'] },
+    { id: 's2', title: 'Meeting Template', content: '## Agenda\n1. Review...', tags: ['meeting', 'template'] },
+  ]);
+
+  const [filterTag, setFilterTag] = useState('');
+
+  // Mock notebook titles
+  const notebookTitles: Record<string, string> = {
+    'demo': 'Demo Notebook',
+    'meeting-notes': 'Meeting Notes',
+    'research': 'Research Notes',
+  };
+
+  const title = notebookTitles[resolvedParams.id];
+  if (!title) return notFound();
 
   // J64: Semantic Q&A for this page
   const [showAskModal, setShowAskModal] = useState(false);
@@ -560,7 +570,7 @@ export default function NotebookDemoPage({ params }: { params: { id: string } })
   // J45: Tagging and filtering
   const [tags, setTags] = useState<string[]>(['research', 'ai']);
   const [tagInput, setTagInput] = useState('');
-  const [filterTag, setFilterTag] = useState('');
+  const [tagInput, setTagInput] = useState('');
 
   // J46: Inject as Memory
   const [showMemoryConfirm, setShowMemoryConfirm] = useState(false);

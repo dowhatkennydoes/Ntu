@@ -26,6 +26,8 @@ import MereAIAssistantWorkflow from './MereAIAssistantWorkflow'
 import MarathonFlowBuilderWorkflow from './MarathonFlowBuilderWorkflow'
 import MemoryIntelligenceWorkflow from './MemoryIntelligenceWorkflow'
 import PunctualTaskManagerWorkflow from './PunctualTaskManagerWorkflow'
+import YonderVoiceWorkflow from './YonderVoiceWorkflow'
+import YonderMeetingManager from './YonderMeetingManager'
 
 interface WorkflowCard {
   id: string
@@ -445,6 +447,36 @@ export function WorkflowDashboard() {
           description: 'Time tracking, productivity analytics, and smart scheduling',
           component: <PunctualTaskManagerWorkflow />,
           aiAssisted: true,
+        },
+      ],
+    },
+    {
+      id: 'yonder-voice',
+      title: 'Yonder Voice',
+      description: 'Advanced voice recording with AI transcription and analysis',
+      icon: MicrophoneIcon,
+      color: 'bg-red-500',
+      steps: [
+        {
+          id: 'voice-recording',
+          title: 'Voice Recording',
+          description: 'Record and transcribe voice content with AI intelligence',
+          component: <YonderVoiceWorkflow />,
+        },
+      ],
+    },
+    {
+      id: 'yonder-meetings',
+      title: 'Yonder Meetings',
+      description: 'Google Meet integration with live transcription and AI analysis',
+      icon: VideoCameraIcon,
+      color: 'bg-indigo-500',
+      steps: [
+        {
+          id: 'meeting-management',
+          title: 'Meeting Management',
+          description: 'Join meetings, transcribe live, and analyze with AI',
+          component: <YonderMeetingManager userId="mock-user-id" />,
         },
       ],
     },
