@@ -1,0 +1,843 @@
+
+> ntu@1.0.0 dev
+> next dev
+
+ ⚠ Warning: Found multiple lockfiles. Selecting /Users/kenny/Documents/CodeProjects/package-lock.json.
+   Consider removing the lockfiles at:
+   * /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/package-lock.json
+
+   ▲ Next.js 15.4.3
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.161:3000
+   - Environments: .env
+   - Experiments (use with caution):
+     ✓ optimizeCss
+     · optimizePackageImports
+
+ ✓ Starting...
+ ✓ Ready in 2.4s
+ ○ Compiling / ...
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Setting up new context...
+Finding changed files: 11.257ms
+Reading changed files: 577.456ms
+Sorting candidates: 13.16ms
+Generate rules: 267.756ms
+Build stylesheet: 4.029ms
+Potential classes:  16182
+Active contexts:  1
+JIT TOTAL: 1.070s
+
+
+ ✓ Compiled / in 7.1s (1495 modules)
+ GET / 200 in 7703ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 6.207ms
+Reading changed files: 0.009ms
+Sorting candidates: 0.004ms
+Generate rules: 0.077ms
+Build stylesheet: 0.003ms
+Potential classes:  1
+Active contexts:  1
+JIT TOTAL: 60.708ms
+
+
+ ✓ Compiled in 776ms (669 modules)
+ ○ Compiling /auth/login ...
+ ✓ Compiled /auth/login in 740ms (1487 modules)
+ GET /auth/login 200 in 1316ms
+   Reload env: .env
+ ✓ Compiled in 228ms (1487 modules)
+ GET / 200 in 250ms
+ GET /auth/login 200 in 53ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 8.199ms
+Reading changed files: 4.801ms
+Sorting candidates: 0.082ms
+Generate rules: 0.275ms
+Build stylesheet: 0.001ms
+Potential classes:  157
+Active contexts:  1
+JIT TOTAL: 73.118ms
+
+
+ ✓ Compiled in 484ms (1501 modules)
+ GET / 200 in 244ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 7.149ms
+Reading changed files: 8.687ms
+Sorting candidates: 0.083ms
+Generate rules: 0.238ms
+Build stylesheet: 0.001ms
+Potential classes:  164
+Active contexts:  1
+JIT TOTAL: 76.139ms
+
+
+ ✓ Compiled in 448ms (1501 modules)
+ GET /auth/login 200 in 320ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 6.081ms
+Reading changed files: 11.341ms
+Sorting candidates: 0.091ms
+Generate rules: 0.31ms
+Build stylesheet: 0.002ms
+Potential classes:  163
+Active contexts:  1
+JIT TOTAL: 76.753ms
+
+
+ ✓ Compiled in 229ms (675 modules)
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 7.75ms
+Reading changed files: 21.637ms
+Sorting candidates: 0.15ms
+Generate rules: 1.84ms
+Build stylesheet: 0.002ms
+Potential classes:  258
+Active contexts:  1
+JIT TOTAL: 95.788ms
+
+
+ ✓ Compiled in 1183ms (1466 modules)
+ ⨯ Error: useAuth must be used within an AuthProvider
+    at useAuth (src/contexts/AuthContext.tsx:198:10)
+    at AuthWrapper (src/components/AuthWrapper.tsx:24:35)
+  196 |   const context = useContext(AuthContext)
+  197 |   if (context === undefined) {
+> 198 |     throw new Error('useAuth must be used within an AuthProvider')
+      |          ^
+  199 |   }
+  200 |   return context
+  201 | } {
+  digest: '3625899678'
+}
+ GET /auth/login 500 in 565ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 7.612ms
+Reading changed files: 8.204ms
+Sorting candidates: 0.11ms
+Generate rules: 0.893ms
+Build stylesheet: 0.002ms
+Potential classes:  157
+Active contexts:  1
+JIT TOTAL: 174.228ms
+
+
+ ✓ Compiled in 453ms (1466 modules)
+ GET /auth/login 200 in 437ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 6.569ms
+Reading changed files: 7.885ms
+Sorting candidates: 0.079ms
+Generate rules: 0.231ms
+Build stylesheet: 0.002ms
+Potential classes:  154
+Active contexts:  1
+JIT TOTAL: 77.662ms
+
+
+ ✓ Compiled in 411ms (1466 modules)
+ GET /auth/login 200 in 305ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 6.147ms
+Reading changed files: 6.38ms
+Sorting candidates: 0.099ms
+Generate rules: 0.976ms
+Build stylesheet: 0.002ms
+Potential classes:  167
+Active contexts:  1
+JIT TOTAL: 82.447ms
+
+
+ ✓ Compiled in 381ms (1466 modules)
+ GET /auth/login 200 in 318ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 6.702ms
+Reading changed files: 6.261ms
+Sorting candidates: 0.035ms
+Generate rules: 0.682ms
+Build stylesheet: 0.002ms
+Potential classes:  68
+Active contexts:  1
+JIT TOTAL: 81.118ms
+
+
+ ✓ Compiled in 484ms (1452 modules)
+ ○ Compiling /test-simple ...
+ ✓ Compiled /test-simple in 689ms (1458 modules)
+ GET /test-simple 200 in 1066ms
+ ✓ Compiled / in 232ms (832 modules)
+ GET / 200 in 627ms
+ GET /auth/login 200 in 42ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 7.762ms
+Reading changed files: 10.907ms
+Sorting candidates: 0.385ms
+Generate rules: 4.285ms
+Build stylesheet: 0.002ms
+Potential classes:  555
+Active contexts:  1
+JIT TOTAL: 102.5ms
+
+
+ ✓ Compiled in 1045ms (1509 modules)
+ GET /auth/login 200 in 555ms
+ GET /auth/login 200 in 45ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 10.685ms
+Reading changed files: 13.575ms
+Sorting candidates: 0.524ms
+Generate rules: 4.706ms
+Build stylesheet: 0.002ms
+Potential classes:  618
+Active contexts:  1
+JIT TOTAL: 110.743ms
+
+
+ ✓ Compiled in 308ms (677 modules)
+ GET /auth/login 200 in 27ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 8.651ms
+Reading changed files: 8.75ms
+Sorting candidates: 0.123ms
+Generate rules: 0.285ms
+Build stylesheet: 0.002ms
+Potential classes:  163
+Active contexts:  1
+JIT TOTAL: 169.017ms
+
+
+ ✓ Compiled in 552ms (1504 modules)
+ GET /auth/login 200 in 247ms
+ GET /auth/login 200 in 264ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 7.226ms
+Reading changed files: 5.698ms
+Sorting candidates: 0.179ms
+Generate rules: 1.039ms
+Build stylesheet: 0.002ms
+Potential classes:  177
+Active contexts:  1
+JIT TOTAL: 88.496ms
+
+
+ ✓ Compiled in 423ms (1465 modules)
+ GET /auth/login 200 in 301ms
+AuthWrapper: Bypassing auth check for public route: /auth/login
+ GET /auth/login 200 in 357ms
+AuthWrapper: Bypassing auth check for public route: /auth/login
+ GET /auth/login 200 in 58ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 8.142ms
+Reading changed files: 8.298ms
+Sorting candidates: 0.17ms
+Generate rules: 0.397ms
+Build stylesheet: 0.002ms
+Potential classes:  166
+Active contexts:  1
+JIT TOTAL: 107.427ms
+
+
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 9.884ms
+Reading changed files: 0.01ms
+Sorting candidates: 0.005ms
+Generate rules: 0.081ms
+Build stylesheet: 0.002ms
+Potential classes:  1
+Active contexts:  1
+JIT TOTAL: 129.515ms
+
+
+ ✓ Compiled in 1020ms (1465 modules)
+ GET /auth/login 200 in 147ms
+AuthWrapper: Bypassing auth check for public route: /auth/login
+ GET /auth/login 200 in 435ms
+ ○ Compiling /auth/signup ...
+ ✓ Compiled /auth/signup in 1012ms (1462 modules)
+ GET /auth/signup 200 in 1158ms
+AuthWrapper: Bypassing auth check for public route: /auth/signup
+ GET /auth/signup 200 in 389ms
+ ✓ Compiled / in 425ms (834 modules)
+AuthWrapper: Showing loading screen - loading: false shouldRender: false
+ GET / 200 in 750ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 11.264ms
+Reading changed files: 9.236ms
+Sorting candidates: 0.196ms
+Generate rules: 0.989ms
+Build stylesheet: 0.002ms
+Potential classes:  168
+Active contexts:  1
+JIT TOTAL: 111.172ms
+
+
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 7.64ms
+Reading changed files: 0.005ms
+Sorting candidates: 0.004ms
+Generate rules: 0.057ms
+Build stylesheet: 0.002ms
+Potential classes:  1
+Active contexts:  1
+JIT TOTAL: 100.357ms
+
+
+ ✓ Compiled in 1170ms (1515 modules)
+ GET /auth/signup 200 in 142ms
+AuthWrapper: Showing loading screen - loading: false shouldRender: false
+ GET /auth/login 200 in 276ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 6.15ms
+Reading changed files: 8.396ms
+Sorting candidates: 0.178ms
+Generate rules: 0.946ms
+Build stylesheet: 0.001ms
+Potential classes:  174
+Active contexts:  1
+JIT TOTAL: 91.413ms
+
+
+ ✓ Compiled in 495ms (1515 modules)
+ GET /auth/signup 200 in 167ms
+AuthWrapper: Showing loading screen - loading: false shouldRender: false
+ GET /auth/login 200 in 266ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 10.096ms
+Reading changed files: 41.759ms
+Sorting candidates: 0.21ms
+Generate rules: 1.225ms
+Build stylesheet: 0.002ms
+Potential classes:  174
+Active contexts:  1
+JIT TOTAL: 339.641ms
+
+
+ ✓ Compiled in 2.3s (1478 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /auth/signup 200 in 292ms
+ ⨯ Error: useAuth must be used within an AuthProvider
+    at useAuth (src/contexts/AuthContext.tsx:198:10)
+    at AuthWrapper (src/components/AuthWrapper.tsx:24:35)
+  196 |   const context = useContext(AuthContext)
+  197 |   if (context === undefined) {
+> 198 |     throw new Error('useAuth must be used within an AuthProvider')
+      |          ^
+  199 |   }
+  200 |   return context
+  201 | } {
+  digest: '3625899678'
+}
+ GET /auth/signup 500 in 380ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 10.482ms
+Reading changed files: 6.448ms
+Sorting candidates: 0.47ms
+Generate rules: 3.068ms
+Build stylesheet: 0.005ms
+Potential classes:  256
+Active contexts:  1
+JIT TOTAL: 157.669ms
+
+
+ ✓ Compiled in 1500ms (1478 modules)
+ GET /auth/signup 200 in 7ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /auth/signup 200 in 505ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/login 200 in 50ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 10.055ms
+Reading changed files: 6.016ms
+Sorting candidates: 0.098ms
+Generate rules: 0.329ms
+Build stylesheet: 0.001ms
+Potential classes:  167
+Active contexts:  1
+JIT TOTAL: 109.231ms
+
+
+ ✓ Compiled in 681ms (1478 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/signup 200 in 379ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/login 200 in 57ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 9.456ms
+Reading changed files: 11.119ms
+Sorting candidates: 0.268ms
+Generate rules: 0.57ms
+Build stylesheet: 0.002ms
+Potential classes:  261
+Active contexts:  1
+JIT TOTAL: 135.556ms
+
+
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 780ms (1478 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/signup 200 in 846ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/login 200 in 49ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 12.597ms
+Reading changed files: 8.141ms
+Sorting candidates: 0.225ms
+Generate rules: 0.528ms
+Build stylesheet: 0.002ms
+Potential classes:  182
+Active contexts:  1
+JIT TOTAL: 120.935ms
+
+
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 762ms (1478 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/signup 200 in 716ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 11.027ms
+Reading changed files: 13.784ms
+Sorting candidates: 0.247ms
+Generate rules: 0.514ms
+Build stylesheet: 0.002ms
+Potential classes:  207
+Active contexts:  1
+JIT TOTAL: 176.029ms
+
+
+ ✓ Compiled in 767ms (1478 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /auth/signup 200 in 800ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 11.247ms
+Reading changed files: 9.316ms
+Sorting candidates: 0.401ms
+Generate rules: 1.138ms
+Build stylesheet: 0.008ms
+Potential classes:  209
+Active contexts:  1
+JIT TOTAL: 182.374ms
+
+
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 1074ms (1478 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/signup 200 in 823ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 20.312ms
+Reading changed files: 31.779ms
+Sorting candidates: 0.473ms
+Generate rules: 1.058ms
+Build stylesheet: 0.003ms
+Potential classes:  180
+Active contexts:  1
+JIT TOTAL: 230.034ms
+
+
+ ✓ Compiled in 1780ms (1478 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /auth/signup 200 in 573ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 10.402ms
+Reading changed files: 11.282ms
+Sorting candidates: 0.319ms
+Generate rules: 0.643ms
+Build stylesheet: 0.002ms
+Potential classes:  223
+Active contexts:  1
+JIT TOTAL: 157.014ms
+
+
+ ✓ Compiled in 731ms (1478 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /auth/signup 200 in 414ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 13.738ms
+Reading changed files: 8.153ms
+Sorting candidates: 1.153ms
+Generate rules: 3.857ms
+Build stylesheet: 0.008ms
+Potential classes:  258
+Active contexts:  1
+JIT TOTAL: 140.454ms
+
+
+ ✓ Compiled in 1506ms (1478 modules)
+ ⨯ Error: useAuth must be used within an AuthProvider
+    at useAuth (src/contexts/AuthContext.tsx:220:10)
+    at AuthWrapper (src/components/AuthWrapper.tsx:24:35)
+  218 |   const context = useContext(AuthContext)
+  219 |   if (context === undefined) {
+> 220 |     throw new Error('useAuth must be used within an AuthProvider')
+      |          ^
+  221 |   }
+  222 |   return context
+  223 | } {
+  digest: '3625899678'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /auth/signup 500 in 458ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 15.311ms
+Reading changed files: 25.633ms
+Sorting candidates: 0.387ms
+Generate rules: 1.847ms
+Build stylesheet: 0.007ms
+Potential classes:  174
+Active contexts:  1
+JIT TOTAL: 561.465ms
+
+
+ ✓ Compiled in 1194ms (1476 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+AuthWrapper: Showing loading screen - loading: false shouldRender: false
+AuthWrapper: Showing loading screen - loading: false shouldRender: false
+ GET /auth/signup 200 in 396ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 8.524ms
+Reading changed files: 12.702ms
+Sorting candidates: 0.308ms
+Generate rules: 0.506ms
+Build stylesheet: 0.002ms
+Potential classes:  223
+Active contexts:  1
+JIT TOTAL: 106.298ms
+
+
+ ✓ Compiled in 531ms (1476 modules)
+ GET /auth/signup 200 in 99ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/login 200 in 201ms
+ ✓ Compiled in 461ms (1462 modules)
+ ○ Compiling /api/google/oauth/url ...
+ ✓ Compiled /api/google/oauth/url in 3s (1565 modules)
+ GET /api/google/oauth/url 405 in 3476ms
+ ✓ Compiled /api/google/oauth/callback in 277ms (1567 modules)
+ GET /api/google/oauth/callback 307 in 416ms
+ ○ Compiling /yonder ...
+ ✓ Compiled /yonder in 1330ms (1616 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /yonder?error=oauth_invalid 200 in 1745ms
+ ✓ Compiled /api/google/accounts in 332ms (1618 modules)
+ GET /api/google/accounts 400 in 395ms
+ ✓ Compiled /api/google/calendar in 335ms (1620 modules)
+ GET /api/google/calendar 400 in 399ms
+ ✓ Compiled /api/google/disconnect in 349ms (1622 modules)
+ GET /api/google/disconnect 405 in 407ms
+ POST /api/google/oauth/url 200 in 13ms
+ POST /api/google/oauth/url 200 in 18ms
+ POST /api/google/oauth/url 200 in 16ms
+ ✓ Compiled / in 425ms (937 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET / 200 in 731ms
+ GET /auth/login 200 in 40ms
+ POST /api/google/oauth/url 200 in 39ms
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 9.554ms
+Reading changed files: 9.55ms
+Sorting candidates: 0.565ms
+Generate rules: 8.218ms
+Build stylesheet: 0.003ms
+Potential classes:  514
+Active contexts:  1
+JIT TOTAL: 164.501ms
+
+
+ ✓ Compiled in 2.1s (689 modules)
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 7.384ms
+Reading changed files: 11.193ms
+Sorting candidates: 0.323ms
+Generate rules: 2.611ms
+Build stylesheet: 0.002ms
+Potential classes:  516
+Active contexts:  1
+JIT TOTAL: 337.15ms
+
+
+ ✓ Compiled in 542ms (689 modules)
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 7.99ms
+Reading changed files: 13.084ms
+Sorting candidates: 0.429ms
+Generate rules: 3.252ms
+Build stylesheet: 0.004ms
+Potential classes:  520
+Active contexts:  1
+JIT TOTAL: 151.812ms
+
+
+ ✓ Compiled in 419ms (689 modules)
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 8.112ms
+Reading changed files: 12.162ms
+Sorting candidates: 0.332ms
+Generate rules: 2.945ms
+Build stylesheet: 0.003ms
+Potential classes:  522
+Active contexts:  1
+JIT TOTAL: 111.785ms
+
+
+ ✓ Compiled in 327ms (689 modules)
+
+
+Source path: /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/src/app/globals.css
+Finding changed files: 14.354ms
+Reading changed files: 0.012ms
+Sorting candidates: 0.008ms
+Generate rules: 0.095ms
+Build stylesheet: 0.002ms
+Potential classes:  1
+Active contexts:  1
+JIT TOTAL: 228.464ms
+
+
+ ✓ Compiled in 1073ms (1484 modules)
+ ○ Compiling /api/google/oauth/url ...
+ ✓ Compiled /api/google/oauth/url in 593ms (898 modules)
+ ⨯ Error: Cannot find module './4985.js'
+Require stack:
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/webpack-runtime.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/app/api/google/oauth/url/route.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/require.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/load-components.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/utils.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/swc/options.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/swc/index.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/router-server.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/api/google/oauth/url/route.js:5:202)
+    at Object.<anonymous> (.next/server/app/api/google/oauth/url/route.js:5:259) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/api/google/oauth/url'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 2.1s (1900 modules)
+Time 7.554666
+ GET /api/google/oauth/url 500 in 3540ms
+ ✓ Compiled /api/google/oauth/callback in 252ms (1080 modules)
+ GET /api/google/oauth/callback 307 in 476ms
+ ○ Compiling /yonder ...
+ ✓ Compiled /yonder in 859ms (1121 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /yonder?error=oauth_invalid 200 in 1419ms
+ ✓ Compiled /api/google/accounts in 284ms (1123 modules)
+ GET /api/google/accounts 400 in 397ms
+ ✓ Compiled /api/google/calendar in 282ms (1125 modules)
+ GET /api/google/calendar 400 in 353ms
+ ✓ Compiled /api/google/disconnect in 317ms (1127 modules)
+ GET /api/google/disconnect 405 in 385ms
+ ⨯ Error: Cannot find module './4985.js'
+Require stack:
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/webpack-runtime.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/app/api/google/disconnect/route.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/require.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/load-components.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/utils.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/swc/options.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/swc/index.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/router-server.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/api/google/oauth/url/route.js:5:202)
+    at Object.<anonymous> (.next/server/app/api/google/oauth/url/route.js:5:259) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/api/google/oauth/url'
+}
+Time 1.233782
+ POST /api/google/oauth/url 500 in 313ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 522ms (1954 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /auth/login 404 in 1004ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /_next/static/css/app/layout.css?v=1753471123256 404 in 58ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /_next/static/chunks/main-app.js?v=1753471123256 404 in 108ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 103ms
+ GET /_next/static/chunks/app/layout.js 404 in 102ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/app/auth/login/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/app/auth/login/page.js',
+  page: '/auth/login'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/pages/_document.js'
+}
+Time 1.582527
+ GET /auth/login 500 in 1344ms
+ ✓ Compiled / in 502ms (1015 modules)
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET / 200 in 957ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /_next/static/css/app/layout.css?v=1753471136741 404 in 50ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /_next/static/chunks/main-app.js?v=1753471136741 404 in 72ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 74ms
+AuthWrapper: Showing loading screen - loading: true shouldRender: false
+ GET /_next/static/chunks/app/layout.js 404 in 48ms
+ GET /_next/static/chunks/app/page.js 404 in 27ms
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')] {
+  digest: '2523930497'
+}
+[TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')] {
+  page: '/'
+}
+ ⨯ Error: Cannot find module './8548.js'
+Require stack:
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/webpack-runtime.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/.next/server/app/page.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/require.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/load-components.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/utils.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/swc/options.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/swc/index.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/router-server.js
+- /Users/kenny/Documents/CodeProjects/Ntu/NTUapp/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:327)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:374) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+Time 3.504618
+ GET / 500 in 1219ms
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')] {
+  digest: '2523930497'
+}
+[TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')] {
+  digest: '2523930497'
+}
+[TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')] {
+  digest: '2523930497'
+}
+[TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')] {
+  digest: '2523930497'
+}
+[TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')] {
+  digest: '2523930497'
+}
+[TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+ ⨯ [TypeError: Cannot read properties of undefined (reading 'call')]
+Time 2.821003
+Time 2.295403
+Time 1.878863
+Time 1.357635
+Time 0.908417
+ GET /_next/static/chunks/fallback/webpack.js 500 in 4273ms
+ GET /_next/static/chunks/fallback/pages/_error.js 500 in 4270ms
+ GET /_next/static/chunks/fallback/pages/_app.js 500 in 4272ms
+ GET /_next/static/chunks/fallback/react-refresh.js 500 in 4274ms
+ GET /_next/static/chunks/fallback/main.js 500 in 4274ms
+[?25h

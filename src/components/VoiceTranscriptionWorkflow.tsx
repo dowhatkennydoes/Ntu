@@ -27,21 +27,6 @@ import {
 export function VoiceTranscriptionWorkflow() {
   const { nextStep, addError, updateWorkflowData } = useWorkflow()
   
-  // Helper function to create properly formatted errors
-  const createError = useCallback((message: string, type: 'validation' | 'processing' | 'network' = 'processing') => {
-    const error = {
-      id: `error_${Date.now()}`,
-      type,
-      message,
-      step: 'voice-transcription',
-      timestamp: new Date().toISOString(),
-      recoverable: true,
-      retryCount: 0,
-      maxRetries: 3
-    }
-    addError(error)
-  }, [addError])
-  
   // Custom hooks for state management
   const recording = useVoiceRecording()
   const transcription = useTranscription()
@@ -74,19 +59,37 @@ export function VoiceTranscriptionWorkflow() {
   const handleStartRecording = useCallback(async () => {
     const result = await recording.startRecording()
     if (!result.success) {
-      createError(result.error || 'Failed to start recording')
+      addError({
+        id: `recording-error-${Date.now()}`,
+        type: 'processing',
+        message: result.error || 'Failed to start recording',
+        step: 'recording',
+        timestamp: new Date().toISOString(),
+        recoverable: true,
+        retryCount: 0,
+        maxRetries: 3
+      })
     }
     return result
-  }, [recording, createError])
+  }, [recording, addError])
 
   // Handle file upload
   const handleFileUpload = useCallback(async (file: File) => {
     const result = await transcription.processUploadedFile(file)
     if (!result.success) {
-      createError(result.error || 'Failed to process file')
+      addError({
+        id: `file-upload-${Date.now()}`,
+        type: 'processing',
+        message: result.error || 'Failed to process file',
+        step: 'file-upload',
+        timestamp: new Date().toISOString(),
+        recoverable: true,
+        retryCount: 0,
+        maxRetries: 2
+      })
     }
     return result
-  }, [transcription, createError])
+  }, [transcription, addError])
 
   // Handle bookmark toggle
   const handleBookmarkToggle = useCallback((segmentId: string) => {
@@ -159,7 +162,16 @@ export function VoiceTranscriptionWorkflow() {
   // Save as memory
   const handleSaveAsMemory = useCallback(async () => {
     if (transcription.transcriptSegments.length === 0) {
-      createError('No transcript available to save', 'validation')
+      addError({
+        id: `memory-save-${Date.now()}`,
+        type: 'validation',
+        message: 'No transcript available to save',
+        step: 'memory-save',
+        timestamp: new Date().toISOString(),
+        recoverable: false,
+        retryCount: 0,
+        maxRetries: 0
+      })
       return
     }
 
@@ -167,28 +179,23 @@ export function VoiceTranscriptionWorkflow() {
       const memoryData: Partial<Memory> = {
         title: `Voice Recording - ${new Date().toLocaleDateString()}`,
         content: transcription.transcriptSegments.map(s => `${s.speaker}: ${s.text}`).join('\n\n'),
-        summary: `Voice transcription with ${transcription.transcriptSegments.length} segments, ${analytics.actionItems.length} action items`,
         category: 'audio',
         source: 'transcription',
-        tags: analytics.topics.map(t => t.name).slice(0, 5),
         metadata: {
-          participants: transcription.speakers.map(s => s.name),
           duration: recording.recordingState.duration,
+          participants: transcription.speakers.map(s => s.name),
           keywords: analytics.topics.map(t => t.name),
           sentiment: analytics.realTimeSentiment.overall > 0 ? 'positive' : 
                     analytics.realTimeSentiment.overall < 0 ? 'negative' : 'neutral',
-          language: 'en',
-          transcriptionConfidence: 0.89
+          language: 'en'
         }
       }
 
       updateWorkflowData({
-        transcription: {
-          segments: transcription.transcriptSegments,
-          speakers: transcription.speakers,
-          analytics: analytics.analytics,
-          memory: memoryData
-        }
+        segments: transcription.transcriptSegments,
+        speakers: transcription.speakers,
+        analytics: analytics.analytics,
+        memory: memoryData
       })
 
       setMemorySaved(true)
@@ -198,7 +205,16 @@ export function VoiceTranscriptionWorkflow() {
         nextStep()
       }, 1000)
     } catch (error) {
-      createError('Failed to save as memory')
+      addError({
+        id: `memory-save-error-${Date.now()}`,
+        type: 'processing',
+        message: 'Failed to save as memory',
+        step: 'memory-save',
+        timestamp: new Date().toISOString(),
+        recoverable: true,
+        retryCount: 0,
+        maxRetries: 2
+      })
     }
   }, [
     transcription.transcriptSegments,
@@ -207,7 +223,7 @@ export function VoiceTranscriptionWorkflow() {
     analytics,
     updateWorkflowData,
     nextStep,
-    createError
+    addError
   ])
 
   return (

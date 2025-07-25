@@ -5,6 +5,7 @@ import { User, Session, AuthError } from '@supabase/supabase-js'
 export interface AuthUser {
   id: string
   email: string
+  name?: string
   created_at: string
   updated_at: string
 }
@@ -38,17 +39,37 @@ export class AuthManager {
 
   // Initialize auth state
   async initialize() {
-    // Get initial session
-    const { data: { session } } = await supabase.auth.getSession()
-    this.currentSession = session
-    this.currentUser = session?.user ?? null
-
-    // Listen for auth changes
-    supabase.auth.onAuthStateChange((event, session) => {
+    try {
+      console.log('AuthManager: Starting initialization...')
+      
+      // Get initial session with timeout
+      const sessionPromise = supabase.auth.getSession()
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('getSession timeout after 5 seconds')), 5000)
+      )
+      
+      const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any
+      
       this.currentSession = session
       this.currentUser = session?.user ?? null
-      console.log('Auth state changed:', event, session?.user?.email)
-    })
+      
+      console.log('AuthManager: Session retrieved:', session ? 'exists' : 'null')
+      console.log('AuthManager: User:', this.currentUser ? this.currentUser.email : 'null')
+
+      // Listen for auth changes
+      supabase.auth.onAuthStateChange((event, session) => {
+        this.currentSession = session
+        this.currentUser = session?.user ?? null
+        console.log('Auth state changed:', event, session?.user?.email)
+      })
+      
+      console.log('AuthManager: Initialization complete')
+    } catch (error) {
+      console.error('AuthManager initialization error:', error)
+      this.currentSession = null
+      this.currentUser = null
+      throw error
+    }
   }
 
   // Get current user

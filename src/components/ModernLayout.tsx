@@ -21,6 +21,8 @@ interface ModernLayoutProps {
   title?: string
   subtitle?: string
   actions?: React.ReactNode
+  currentView?: 'overview' | 'mere'
+  onViewChange?: (view: 'overview' | 'mere') => void
 }
 
 const ModernLayout = memo(function ModernLayout({ 
@@ -29,7 +31,9 @@ const ModernLayout = memo(function ModernLayout({
   glassmorphism = true,
   title,
   subtitle,
-  actions
+  actions,
+  currentView,
+  onViewChange
 }: ModernLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -169,6 +173,32 @@ const ModernLayout = memo(function ModernLayout({
 
                 {/* Right Section */}
                 <div className="flex items-center space-x-3">
+                  {/* View Switcher - Only show on dashboard */}
+                  {onViewChange && currentView && (
+                    <div className="flex items-center space-x-1 bg-white/10 rounded-lg p-1">
+                      <button
+                        onClick={() => onViewChange('overview')}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                          currentView === 'overview'
+                            ? 'bg-white/20 text-white'
+                            : 'text-white/70 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        Overview
+                      </button>
+                      <button
+                        onClick={() => onViewChange('mere')}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                          currentView === 'mere'
+                            ? 'bg-white/20 text-white'
+                            : 'text-white/70 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        Mere Chat
+                      </button>
+                    </div>
+                  )}
+                  
                   {/* Custom Actions */}
                   {actions}
                   

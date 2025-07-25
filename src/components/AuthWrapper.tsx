@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/SimpleAuthContext'
 import { motion } from 'framer-motion'
 import { SparklesIcon } from '@heroicons/react/24/outline'
 
@@ -27,28 +27,40 @@ export default function AuthWrapper({ children, requireAuth = true }: AuthWrappe
   const [shouldRender, setShouldRender] = useState(false)
 
   useEffect(() => {
-    if (loading) return
+    console.log('AuthWrapper useEffect: pathname =', pathname, 'loading =', loading, 'user =', user ? 'exists' : 'null', 'requireAuth =', requireAuth)
+    
+    if (loading) {
+      console.log('AuthWrapper: Still loading, showing loading screen')
+      return
+    }
 
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
     const isAuthenticated = !!user
 
+    console.log('AuthWrapper: PUBLIC_ROUTES =', PUBLIC_ROUTES)
+    console.log('AuthWrapper: isPublicRoute =', isPublicRoute, 'isAuthenticated =', isAuthenticated)
+
     if (requireAuth && !isAuthenticated && !isPublicRoute) {
       // Redirect to login if authentication is required but user is not authenticated
+      console.log('AuthWrapper: Condition 1 - Redirecting to login')
       router.push('/auth/login')
       return
     }
 
     if (isAuthenticated && isPublicRoute) {
       // Redirect to dashboard if user is authenticated but on auth pages
+      console.log('AuthWrapper: Condition 2 - Redirecting to dashboard')
       router.push('/')
       return
     }
 
+    console.log('AuthWrapper: No redirect needed, setting shouldRender to true')
     setShouldRender(true)
   }, [user, loading, pathname, router, requireAuth])
 
   // Show loading screen while checking authentication
   if (loading || !shouldRender) {
+    console.log('AuthWrapper: Showing loading screen - loading:', loading, 'shouldRender:', shouldRender)
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <motion.div

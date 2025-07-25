@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { authManager, AuthUser } from '@/lib/supabase-auth'
+import { supabase } from '@/lib/supabase-client'
 
 interface AuthContextType {
   user: User | null
@@ -30,24 +31,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const initializeAuth = async () => {
+    console.log('AuthContext: Starting auth initialization...')
+    
     try {
-      await authManager.initialize()
+      // Add a small delay to ensure client-side hydration is complete
+      await new Promise(resolve => setTimeout(resolve, 100))
       
-      const currentUser = authManager.getCurrentUser()
-      const currentSession = authManager.getCurrentSession()
+      console.log('AuthContext: Bypassing authManager, using direct Supabase call...')
       
-      setUser(currentUser)
-      setSession(currentSession)
+      // Direct Supabase call with timeout instead of using authManager
+      const sessionPromise = supabase.auth.getSession()
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Direct getSession timeout after 3 seconds')), 3000)
+      )
       
-      // Load user profile if authenticated
-      if (currentUser) {
-        const { profile: userProfile } = await authManager.getUserProfile(currentUser.id)
-        setProfile(userProfile)
+      const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
+      
+      if (error) {
+        console.error('AuthContext: Session error:', error)
+        throw error
       }
       
+      console.log('AuthContext: Direct session call successful')
+      console.log('AuthContext: Session exists:', session ? 'yes' : 'no')
+      console.log('AuthContext: User exists:', session?.user ? session.user.email : 'no')
+      
+      setUser(session?.user ?? null)
+      setSession(session)
+      setProfile(null)
+      
+      // Set up auth state listener
+      supabase.auth.onAuthStateChange((event, session) => {
+        console.log('AuthContext: Auth state changed:', event)
+        setSession(session)
+        setUser(session?.user ?? null)
+      })
+      
+      console.log('AuthContext: Auth initialization complete - setting loading to false')
     } catch (error) {
-      console.error('Auth initialization error:', error)
+      console.error('AuthContext: Auth initialization error:', error)
+      // Set user to null on error to ensure proper flow
+      setUser(null)
+      setSession(null)
+      setProfile(null)
     } finally {
+      console.log('AuthContext: Finally block - setting loading to false')
       setLoading(false)
     }
   }
