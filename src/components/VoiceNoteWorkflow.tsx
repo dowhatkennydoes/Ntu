@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { 
   MicrophoneIcon,
   StopIcon,
@@ -316,123 +317,253 @@ Speaker 2: I believe it's the combination of our new UI updates and the enhanced
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-red-950">
       {/* Progress Steps */}
-      <div className="flex items-center justify-between">
-        {['Record', 'Transcribe', 'Enhance'].map((step, index) => (
-          <div key={step} className="flex items-center">
-            <div className={cn(
-              'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
-              currentStep === step.toLowerCase() ? 'bg-purple-600 text-white' :
-              ['record', 'transcribe', 'enhance'].indexOf(currentStep) > index ? 'bg-green-500 text-white' :
-              'bg-gray-200 text-gray-600'
-            )}>
-              {['record', 'transcribe', 'enhance'].indexOf(currentStep) > index ? (
-                <CheckIcon className="h-4 w-4" />
-              ) : (
-                index + 1
-              )}
-            </div>
-            <span className="ml-2 text-sm font-medium text-gray-700">{step}</span>
-            {index < 2 && (
-              <div className="w-8 h-px bg-gray-300 mx-4" />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Step 1: Record Audio */}
-      {currentStep === 'record' && (
-        <div className="bg-white border rounded-lg p-6">
-          <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <MicrophoneIcon className="h-5 w-5 text-purple-600" />
-            Record Voice Note
-          </h4>
-          
-          <div className="text-center space-y-6">
-            {/* Recording Controls */}
-            <div className="flex justify-center">
-              {!isRecording ? (
-                <button
-                  onClick={startRecording}
-                  disabled={voiceNote.audioUrl !== undefined}
-                  className="w-24 h-24 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 rounded-full flex items-center justify-center transition-colors"
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-white/20 dark:border-zinc-800/20 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between">
+            {['Record', 'Transcribe', 'Enhance'].map((step, index) => {
+              const stepKey = step.toLowerCase() as 'record' | 'transcribe' | 'enhance';
+              const isActive = currentStep === stepKey;
+              const isCompleted = ['record', 'transcribe', 'enhance'].indexOf(currentStep) > index;
+              
+              return (
+                <motion.div 
+                  key={step} 
+                  className="flex items-center flex-1"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  <MicrophoneIcon className="h-12 w-12 text-white" />
-                </button>
-              ) : (
-                <button
-                  onClick={stopRecording}
-                  className="w-24 h-24 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors animate-pulse"
-                >
-                  <StopIcon className="h-12 w-12 text-white" />
-                </button>
-              )}
-            </div>
-
-            {/* Recording Status */}
-            <div>
-              {isRecording ? (
-                <div className="text-lg font-medium text-red-600 flex items-center justify-center gap-2">
-                  <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                  Recording: {formatTime(recordingTime)}
-                </div>
-              ) : voiceNote.audioUrl ? (
-                <div className="text-lg font-medium text-green-600 flex items-center justify-center gap-2">
-                  <CheckIcon className="h-5 w-5" />
-                  Recording Complete: {formatTime(voiceNote.duration)}
-                </div>
-              ) : (
-                <div className="text-lg font-medium text-gray-600">
-                  Press to start recording
-                </div>
-              )}
-            </div>
-
-            {/* Audio Playback */}
-            {voiceNote.audioUrl && (
-              <div className="space-y-4">
-                <audio
-                  ref={audioRef}
-                  src={voiceNote.audioUrl}
-                  onEnded={() => setIsPlaying(false)}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                />
-                
-                <div className="flex justify-center items-center gap-4">
-                  <button
-                    onClick={playAudio}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    {isPlaying ? (
-                      <PauseIcon className="h-4 w-4" />
-                    ) : (
-                      <PlayIcon className="h-4 w-4" />
-                    )}
-                    {isPlaying ? 'Pause' : 'Play'}
-                  </button>
-                  
-                  <span className="text-sm text-gray-600">
-                    Duration: {formatTime(voiceNote.duration)}
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => setCurrentStep('transcribe')}
-                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                >
-                  Continue to Transcription
-                </button>
-              </div>
-            )}
-
-            <p className="text-sm text-gray-600 max-w-md mx-auto">
-              Record your voice note by speaking clearly. The recording will be automatically transcribed and enhanced with AI.
-            </p>
+                  <div className="flex items-center">
+                    <motion.div 
+                      className={cn(
+                        'w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-bold shadow-lg relative overflow-hidden',
+                        isActive 
+                          ? 'bg-gradient-to-br from-red-500 to-pink-600 text-white shadow-red-500/25' :
+                        isCompleted 
+                          ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-green-500/25' :
+                          'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500'
+                      )}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {isCompleted ? (
+                        <CheckIcon className="h-6 w-6" />
+                      ) : (
+                        <span className="text-lg">{index + 1}</span>
+                      )}
+                      {isActive && (
+                        <motion.div 
+                          className="absolute inset-0 bg-white/20 rounded-2xl"
+                          animate={{ scale: [1, 1.2, 1], opacity: [0.7, 0, 0.7] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        />
+                      )}
+                    </motion.div>
+                    <div className="ml-4">
+                      <span className={cn(
+                        'text-lg font-semibold block',
+                        isActive 
+                          ? 'text-red-600 dark:text-red-400' :
+                        isCompleted 
+                          ? 'text-green-600 dark:text-green-400' :
+                          'text-zinc-400 dark:text-zinc-500'
+                      )}>
+                        {step}
+                      </span>
+                      <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                        {step === 'Record' && 'Capture your voice'}
+                        {step === 'Transcribe' && 'AI-powered transcription'}
+                        {step === 'Enhance' && 'Smart enhancement'}
+                      </span>
+                    </div>
+                  </div>
+                  {index < 2 && (
+                    <div className="flex-1 mx-8">
+                      <div className={cn(
+                        'h-1 rounded-full transition-all duration-500',
+                        isCompleted 
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                          'bg-zinc-200 dark:bg-zinc-700'
+                      )} />
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
+      
+      <div className="max-w-4xl mx-auto p-6 space-y-8">
+
+        {/* Step 1: Record Audio */}
+        {currentStep === 'record' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="modern-card p-8"
+          >
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <MicrophoneIcon className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">Record Voice Note</h2>
+              <p className="text-zinc-600 dark:text-zinc-400 text-lg">
+                Capture your thoughts with high-quality audio recording
+              </p>
+            </div>
+            
+            <div className="text-center space-y-8">
+              {/* Recording Controls */}
+              <div className="flex justify-center">
+                {!isRecording ? (
+                  <motion.button
+                    onClick={startRecording}
+                    disabled={voiceNote.audioUrl !== undefined}
+                    className="relative w-32 h-32 bg-gradient-to-br from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 disabled:from-zinc-400 disabled:to-zinc-500 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl disabled:cursor-not-allowed group"
+                    whileHover={{ scale: voiceNote.audioUrl ? 1 : 1.05 }}
+                    whileTap={{ scale: voiceNote.audioUrl ? 1 : 0.95 }}
+                  >
+                    <MicrophoneIcon className="h-16 w-16 text-white group-hover:scale-110 transition-transform" />
+                    {!voiceNote.audioUrl && (
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-400/20 to-pink-500/20 animate-ping" />
+                    )}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    onClick={stopRecording}
+                    className="relative w-32 h-32 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl"
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    <StopIcon className="h-16 w-16 text-white" />
+                    <div className="absolute inset-0 rounded-full bg-red-400/30 animate-pulse" />
+                  </motion.button>
+                )}
+              </div>
+
+              {/* Recording Status */}
+              <motion.div
+                key={isRecording ? 'recording' : voiceNote.audioUrl ? 'complete' : 'ready'}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                {isRecording ? (
+                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/30 rounded-2xl p-6">
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center justify-center gap-3 mb-2">
+                      <motion.div 
+                        className="w-4 h-4 bg-red-500 rounded-full"
+                        animate={{ scale: [1, 1.3, 1] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      />
+                      Recording: {formatTime(recordingTime)}
+                    </div>
+                    <p className="text-red-600/80 dark:text-red-400/80">Speak clearly for best results</p>
+                  </div>
+                ) : voiceNote.audioUrl ? (
+                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/30 rounded-2xl p-6">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400 flex items-center justify-center gap-3 mb-2">
+                      <CheckIcon className="h-6 w-6" />
+                      Recording Complete: {formatTime(voiceNote.duration)}
+                    </div>
+                    <p className="text-green-600/80 dark:text-green-400/80">Ready for transcription</p>
+                  </div>
+                ) : (
+                  <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl p-6">
+                    <div className="text-2xl font-bold text-zinc-600 dark:text-zinc-400 mb-2">
+                      Ready to Record
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-500">Press the microphone to start capturing audio</p>
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Audio Playback */}
+              {voiceNote.audioUrl && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <audio
+                    ref={audioRef}
+                    src={voiceNote.audioUrl}
+                    onEnded={() => setIsPlaying(false)}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                  />
+                  
+                  {/* Audio Waveform Visualization (Mock) */}
+                  <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-6">
+                    <div className="flex items-center justify-center h-20 space-x-1">
+                      {Array.from({ length: 40 }).map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="w-1 bg-gradient-to-t from-red-500 to-pink-500 rounded-full"
+                          style={{ height: Math.random() * 60 + 10 }}
+                          animate={isPlaying ? {
+                            scaleY: [1, Math.random() * 1.5 + 0.5, 1],
+                            opacity: [0.7, 1, 0.7]
+                          } : {}}
+                          transition={{
+                            duration: 0.5,
+                            repeat: isPlaying ? Infinity : 0,
+                            delay: i * 0.05
+                          }}
+                        />
+                      ))}
+                    </div>
+                    
+                    <div className="flex justify-center items-center gap-6 mt-6">
+                      <motion.button
+                        onClick={playAudio}
+                        className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {isPlaying ? (
+                          <PauseIcon className="h-5 w-5" />
+                        ) : (
+                          <PlayIcon className="h-5 w-5" />
+                        )}
+                        {isPlaying ? 'Pause Playback' : 'Play Recording'}
+                      </motion.button>
+                      
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-zinc-700 dark:text-zinc-300">
+                          {formatTime(voiceNote.duration)}
+                        </div>
+                        <div className="text-sm text-zinc-500">Duration</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <motion.button
+                    onClick={() => setCurrentStep('transcribe')}
+                    className="w-full py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ y: 0 }}
+                  >
+                    Continue to Transcription →
+                  </motion.button>
+                </motion.div>
+              )}
+              
+              <div className="max-w-md mx-auto text-center space-y-2">
+                <p className="text-zinc-600 dark:text-zinc-400">
+                  🎤 High-quality audio recording with noise reduction
+                </p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-500">
+                  Supports up to 30 minutes of continuous recording
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
 
       {/* Step 2: Transcribe */}
       {currentStep === 'transcribe' && (
@@ -667,5 +798,7 @@ Speaker 2: I believe it's the combination of our new UI updates and the enhanced
         </div>
       )}
     </div>
+  </div>
   )
 }
+

@@ -11,35 +11,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
-    "/junction/page": [
+    "/auth/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/junction/page.js"
-    ],
-    "/punctual/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/punctual/page.js"
-    ],
-    "/mere/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/mere/page.js"
-    ],
-    "/marathon/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/marathon/page.js"
-    ],
-    "/yonder/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/yonder/page.js"
-    ],
-    "/junction/notebook/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/junction/notebook/[id]/page.js"
+      "static/chunks/app/auth/login/page.js"
     ]
   }
 }

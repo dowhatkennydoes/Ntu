@@ -1,5 +1,5 @@
 import { Worker, Job, Queue } from 'bullmq'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 
 // Create embedding queue for chaining
 const embeddingQueue = new Queue('embedding', {

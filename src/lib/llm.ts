@@ -253,6 +253,10 @@ export const PROMPT_TEMPLATES = {
   MEMORY_EXTRACTION: 'Extract key insights and actionable items from the following content:\n\n{content}',
   INTENT_CLASSIFICATION: 'Classify the intent of the following text:\n\n{content}',
   SENTIMENT_ANALYSIS: 'Analyze the sentiment of the following text:\n\n{content}',
+  ADVANCED_NLU: 'Perform advanced natural language understanding on the following transcript:\n\n{transcript}',
+  MEETING_SUMMARY: 'Generate a comprehensive meeting summary for the following content:\n\n{content}',
+  ACTION_ITEM_EXTRACTION: 'Extract action items from the following meeting content:\n\n{content}',
+  MEETING_PREDICTION: 'Analyze the following meeting data and predict outcomes:\n\n{meetingData}',
 } as const
 
 // Template helper function

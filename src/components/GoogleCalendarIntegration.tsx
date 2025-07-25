@@ -6,7 +6,7 @@ import {
   ExclamationTriangleIcon,
   ArrowRightIcon,
   Cog6ToothIcon,
-  RefreshIcon,
+  ArrowPathIcon,
   TrashIcon
 } from '@heroicons/react/24/outline'
 
@@ -224,7 +224,7 @@ export default function GoogleCalendarIntegration({ userId, onMeetingSelected }:
             disabled={loading}
             className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            <RefreshIcon className="w-4 h-4" />
+            <ArrowPathIcon className="w-4 h-4" />
             <span>Refresh</span>
           </button>
         )}

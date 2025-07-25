@@ -209,3 +209,147 @@
 .gradient-accent {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
+
+/* Modern Background Patterns */
+.bg-grid-zinc-100\/50 {
+  background-image: radial-gradient(circle, rgb(244 244 245 / 0.5) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .bg-grid-zinc-800\/50 {
+  background-image: radial-gradient(circle, rgb(39 39 42 / 0.5) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Glassmorphism Effects */
+.glass {
+  @apply bg-white/20 backdrop-blur-lg border border-white/10;
+}
+
+.glass-dark {
+  @apply bg-zinc-900/20 backdrop-blur-lg border border-zinc-800/10;
+}
+
+/* Modern Card Styles */
+.modern-card {
+  @apply bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-white/20 dark:border-zinc-800/50 shadow-2xl rounded-3xl;
+}
+
+/* Hover Animations */
+.hover-lift {
+  @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl;
+}
+
+.hover-glow {
+  @apply transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/25;
+}
+
+/* Text Gradient Utilities */
+.text-gradient-primary {
+  @apply bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 bg-clip-text text-transparent;
+}
+
+.text-gradient-secondary {
+  @apply bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 bg-clip-text text-transparent;
+}
+
+/* Button Variants */
+.btn-gradient {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105;
+}
+
+.btn-glass {
+  @apply bg-white/10 backdrop-blur-lg border border-white/20 text-white hover:bg-white/20 transition-all duration-300;
+}
+
+/* Loading Skeleton */
+.skeleton {
+  @apply animate-pulse bg-gradient-to-r from-zinc-200 via-zinc-300 to-zinc-200 dark:from-zinc-700 dark:via-zinc-600 dark:to-zinc-700 bg-[length:200%_100%];
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0%, 100% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: -200% 0;
+  }
+}
+
+/* Custom Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Status Indicators */
+.status-active {
+  @apply relative;
+}
+
+.status-active::before {
+  content: '';
+  @apply absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900;
+  animation: pulse 2s infinite;
+}
+
+/* Modern Scrollbar */
+.scrollbar-modern {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+
+.scrollbar-modern::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-modern::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.scrollbar-modern::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, rgb(203 213 225), rgb(148 163 184));
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.scrollbar-modern::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, rgb(148 163 184), rgb(100 116 139));
+  background-clip: content-box;
+}

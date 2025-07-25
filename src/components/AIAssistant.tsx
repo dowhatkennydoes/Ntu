@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   CpuChipIcon, 
@@ -77,13 +77,7 @@ export default function AIAssistant({ onComplete, onCancel, initialRequest }: AI
     }
   ]
 
-  useEffect(() => {
-    if (initialRequest) {
-      handleSubmitRequest(initialRequest)
-    }
-  }, [initialRequest])
-
-  const handleSubmitRequest = async (request: string) => {
+  const handleSubmitRequest = useCallback(async (request: string) => {
     if (!request.trim()) return
 
     const aiRequest: AIRequest = {
@@ -108,7 +102,13 @@ export default function AIAssistant({ onComplete, onCancel, initialRequest }: AI
 
     // Simulate AI processing
     await simulateAIProcessing(aiRequest)
-  }
+  }, [])  // Empty dependency array since function doesn't use any external values
+
+  useEffect(() => {
+    if (initialRequest) {
+      handleSubmitRequest(initialRequest)
+    }
+  }, [initialRequest, handleSubmitRequest])
 
   const simulateAIProcessing = async (request: AIRequest) => {
     // Update status to processing

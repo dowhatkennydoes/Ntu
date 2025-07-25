@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from 'react';
+import { useState, useRef, use } from 'react';
 import { notFound } from 'next/navigation';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -532,9 +532,8 @@ function BlockContent({ block, onChange, inputRef, onToggle }: { block: any, onC
   return null;
 }
 
-export default async function NotebookDemoPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  
+function NotebookDemoContent({ id }: { id: string }) {
+  // All React hooks must be called before any conditional returns
   // J42: Mock real-time collaboration state
   const [collaborators] = useState([
     { id: 'u1', name: 'Alice', avatar: '👩‍💻', status: 'online', cursor: { x: 100, y: 200 } },
@@ -549,16 +548,6 @@ export default async function NotebookDemoPage({ params }: { params: Promise<{ i
 
   const [filterTag, setFilterTag] = useState('');
 
-  // Mock notebook titles
-  const notebookTitles: Record<string, string> = {
-    'demo': 'Demo Notebook',
-    'meeting-notes': 'Meeting Notes',
-    'research': 'Research Notes',
-  };
-
-  const title = notebookTitles[resolvedParams.id];
-  if (!title) return notFound();
-
   // J64: Semantic Q&A for this page
   const [showAskModal, setShowAskModal] = useState(false);
   const [askInput, setAskInput] = useState('');
@@ -570,14 +559,10 @@ export default async function NotebookDemoPage({ params }: { params: Promise<{ i
   // J45: Tagging and filtering
   const [tags, setTags] = useState<string[]>(['research', 'ai']);
   const [tagInput, setTagInput] = useState('');
-  const [tagInput, setTagInput] = useState('');
 
   // J46: Inject as Memory
   const [showMemoryConfirm, setShowMemoryConfirm] = useState(false);
   const [memoryInjected, setMemoryInjected] = useState(false);
-
-  // J43: Snippets
-  const [snippets, setSnippets] = useState<any[]>([]);
 
   // J48: Backlinks (mock)
   const [backlinks] = useState([
@@ -587,9 +572,6 @@ export default async function NotebookDemoPage({ params }: { params: Promise<{ i
 
   // J50: Mini-map/graph view
   const [showGraph, setShowGraph] = useState(false);
-
-  // J51: AI tag suggestions
-  const aiTagSuggestions = ['meeting', 'summary', 'action', 'NLP', 'deep learning'];
 
   // J52: Clone/duplicate page (mock)
   const [cloneFeedback, setCloneFeedback] = useState(false);
@@ -630,6 +612,19 @@ export default async function NotebookDemoPage({ params }: { params: Promise<{ i
   const [showShareModal, setShowShareModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [privacy, setPrivacy] = useState<'private' | 'team' | 'public'>('private');
+
+  // Mock notebook titles
+  const notebookTitles: Record<string, string> = {
+    'demo': 'Demo Notebook',
+    'meeting-notes': 'Meeting Notes',
+    'research': 'Research Notes',
+  };
+
+  const title = notebookTitles[id];
+  if (!title) return notFound();
+
+  // J51: AI tag suggestions
+  const aiTagSuggestions = ['meeting', 'summary', 'action', 'NLP', 'deep learning'];
 
   return (
     <div className="max-w-2xl mx-auto p-8 relative">
@@ -741,7 +736,7 @@ export default async function NotebookDemoPage({ params }: { params: Promise<{ i
       {/* J42: Live cursors and presence */}
       <div className="absolute right-0 top-0 flex items-center gap-2 z-40">
         {collaborators.map(c => (
-          <div key={c.id} className={`w-8 h-8 rounded-full border-2 border-white shadow -mr-2 flex items-center justify-center ${c.color}`}
+          <div key={c.id} className={`w-8 h-8 rounded-full border-2 border-white shadow -mr-2 flex items-center justify-center bg-purple-500`}
             title={c.name}
           >
             <span className="text-white font-bold">{c.name[0]}</span>
@@ -1028,4 +1023,13 @@ export default async function NotebookDemoPage({ params }: { params: Promise<{ i
       <BlockEditor initialBlocks={DEMO_BLOCKS} snippets={snippets} setSnippets={setSnippets} filterTag={filterTag} />
     </div>
   );
+}
+
+export default function NotebookDemoPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }>
+}) {
+  const resolvedParams = use(params);
+  return <NotebookDemoContent id={resolvedParams.id} />;
 } 

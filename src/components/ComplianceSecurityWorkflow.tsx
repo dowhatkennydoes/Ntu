@@ -188,7 +188,7 @@ export default function ComplianceSecurityWorkflow() {
           id: '2',
           type: 'alert',
           parameters: { recipients: ['security@company.com'] },
-          severity: 'high'
+          severity: 'error'
         }
       ],
       createdAt: new Date('2024-01-01'),
@@ -217,7 +217,7 @@ export default function ComplianceSecurityWorkflow() {
           id: '1',
           type: 'encrypt',
           parameters: { algorithm: 'AES-256' },
-          severity: 'high'
+          severity: 'error'
         }
       ],
       createdAt: new Date('2024-01-01'),

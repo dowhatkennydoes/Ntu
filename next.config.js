@@ -6,6 +6,14 @@ const nextConfig = {
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
+  // Performance optimizations
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['@heroicons/react', 'framer-motion', '@react-three/fiber'],
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   async headers() {
     return [
       {

@@ -182,10 +182,12 @@ export async function scheduleCalendarRefresh(userId: string) {
   }
 }
 
+
+
 // MEET28: Handle events without Meet links
 export async function handleNonMeetEvents(userId: string) {
   const events = await fetchCalendarEvents(userId)
-  const nonMeetEvents = events.filter(event => !hasMeetLink(event))
+  const nonMeetEvents = events.filter((event: any) => !hasMeetLink(event))
   
   console.log(`Found ${nonMeetEvents.length} events without Meet links`)
   

@@ -360,7 +360,7 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
           case 's':
             e.preventDefault();
             if (input.trim()) {
-              setSavedSearches(prev => [...new Set([input, ...prev])]);
+              setSavedSearches(prev => Array.from(new Set([input, ...prev])));
             }
             break;
         }
@@ -475,7 +475,7 @@ const JunctionSemanticSearchWorkflow: React.FC = () => {
                 </button>
                 <button
                   onClick={() => { 
-                    if (input.trim()) setSavedSearches(prev => [...new Set([input, ...prev])]);
+                    if (input.trim()) setSavedSearches(prev => Array.from(new Set([input, ...prev])));
                     setQuickActions(false);
                   }}
                   className="p-4 border rounded-lg hover:bg-gray-50 text-left transition-colors"

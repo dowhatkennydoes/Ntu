@@ -1,5 +1,5 @@
 import { Worker, Job, Queue } from 'bullmq'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { generateWithFallback, PROMPT_TEMPLATES, formatPrompt } from '@/lib/llm'
 
 // Create embedding queue for chaining

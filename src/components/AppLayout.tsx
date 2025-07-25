@@ -1,18 +1,17 @@
 'use client'
 
 import { ReactNode } from 'react'
-import { MereSidebar } from './mere/mere-sidebar'
+import { AppSidebar } from './AppSidebar'
 
 interface AppLayoutProps {
   children: ReactNode
-  appName?: string
 }
 
-export function AppLayout({ children, appName }: AppLayoutProps) {
+export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="flex h-screen bg-background">
-      <MereSidebar appName={appName} />
-      <main className="flex-1 overflow-y-auto">
+    <div className="flex h-screen bg-zinc-50 dark:bg-zinc-900">
+      <AppSidebar />
+      <main className="flex-1 overflow-hidden">
         {children}
       </main>
     </div>

@@ -1,5 +1,5 @@
 import { Worker, Job } from 'bullmq'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { openai, ollamaClient } from '@/lib/llm'
 
 // Redis connection configuration

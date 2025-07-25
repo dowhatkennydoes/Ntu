@@ -1,4 +1,5 @@
-import { supabase, supabaseAdmin, MeetingSummary, MeetingTranscript } from './supabase-meetings'
+import { supabase, MeetingSummary, MeetingTranscript } from './supabase-meetings'
+import { supabaseAdmin } from './supabase-admin'
 import { generateWithFallback, PROMPT_TEMPLATES, formatPrompt } from './llm'
 import { embeddingQueue } from './redis'
 
@@ -341,13 +342,6 @@ export async function queueTranscriptEmbedding(
       sourceType: 'meeting_transcript',
       sourceApp: 'yonder',
       memoryId: meetingId,
-      snapshotId: `meeting_${meetingId}`,
-      confidenceScore: 0.9,
-      intentLabel: 'meeting_discussion',
-      usageType: 'meeting_analysis',
-      tags: ['meeting', 'transcript', 'yonder'],
-      originatingLLM: 'whisper',
-      prompt: 'Meeting transcript for vector embedding',
     })
 
     console.log(`Transcript embedding queued for meeting: ${meetingId}`)

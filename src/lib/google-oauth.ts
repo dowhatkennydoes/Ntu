@@ -1,4 +1,5 @@
-import { supabase, supabaseAdmin, GoogleOAuthTokens, logGoogleAuth } from './supabase-meetings'
+import { supabase, GoogleOAuthTokens, logGoogleAuth } from './supabase-meetings'
+import { supabaseAdmin } from './supabase-admin'
 
 // Google OAuth configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!

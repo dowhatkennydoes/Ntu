@@ -187,7 +187,7 @@ export default function JunctionAIWritingWorkflow() {
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-12-14'),
       tags: ['research', 'analysis'],
-      memoryZone: 'confidential'
+      memoryZone: 'standard'
     }
   ]
 

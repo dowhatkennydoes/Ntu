@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from './supabase-admin'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Service role client for server-side operations
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+// Re-export the admin client from the server-side file
+export { supabaseAdmin }
 
 // Google OAuth tokens table (MEET5, MEET16)
 export interface GoogleOAuthTokens {

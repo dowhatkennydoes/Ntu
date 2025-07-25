@@ -221,7 +221,7 @@ export default function TeamCollaborationWorkflow() {
         if (memory.id === memoryId) {
           const updatedWorkflow = memory.approvalWorkflow.map(step => ({
             ...step,
-            status: approved ? 'approved' : 'rejected',
+            status: approved ? 'approved' as const : 'rejected' as const,
             comments: comment ? [...step.comments, comment] : step.comments,
             completedAt: new Date()
           }))
@@ -358,7 +358,7 @@ export default function TeamCollaborationWorkflow() {
       id: Date.now().toString(),
       content,
       type,
-      status: 'pending',
+      status: 'pending' as const,
       author: '1',
       memoryId,
       timestamp: new Date()

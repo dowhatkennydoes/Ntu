@@ -1,4 +1,5 @@
-import { supabase, supabaseAdmin, MeetingBotSession } from './supabase-meetings'
+import { supabase, MeetingBotSession } from './supabase-meetings'
+import { supabaseAdmin } from './supabase-admin'
 import { getValidAccessToken } from './google-oauth'
 
 // Bot configuration
