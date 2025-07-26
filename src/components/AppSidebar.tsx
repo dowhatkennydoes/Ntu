@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/SimpleAuthContext'
 import GoogleCalendarStatus from './GoogleCalendarStatus'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'

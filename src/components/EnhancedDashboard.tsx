@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/SimpleAuthContext'
 import ModernLayout from './ModernLayout'
 import DashboardOverview from './DashboardOverview'
 import OnboardingModal from './OnboardingModal'

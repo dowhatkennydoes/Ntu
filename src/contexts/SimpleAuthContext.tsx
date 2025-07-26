@@ -165,6 +165,8 @@ export function SimpleAuthProvider({ children }: { children: ReactNode }) {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`
+          // Calendar scopes temporarily removed - will add back after basic auth works
+          // scopes: 'email profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events'
         }
       })
 

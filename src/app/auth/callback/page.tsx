@@ -30,6 +30,8 @@ export default function AuthCallback() {
         if (data.session) {
           const { user, provider_token, provider_refresh_token } = data.session
           
+          console.log('Auth callback: Session found, user:', user.email)
+          
           // If this is a Google OAuth login and we have tokens, store them for Calendar access
           if (user.app_metadata?.provider === 'google' && provider_token) {
             setStatus('Setting up Google Calendar access...')
@@ -64,7 +66,11 @@ export default function AuthCallback() {
           }
 
           setStatus('Redirecting to your dashboard...')
-          setTimeout(() => router.push('/'), 1000)
+          console.log('Auth callback: Redirecting to dashboard...')
+          // Force a page reload to ensure auth state is properly synchronized
+          setTimeout(() => {
+            window.location.href = '/'
+          }, 1500)
         } else {
           // No session, redirect to login
           router.push('/auth/login')

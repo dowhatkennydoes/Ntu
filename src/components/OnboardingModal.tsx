@@ -13,7 +13,7 @@ import {
   ArrowLeftIcon,
   PlayIcon
 } from '@heroicons/react/24/outline'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/SimpleAuthContext'
 
 interface OnboardingStep {
   id: string

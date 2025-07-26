@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/SimpleAuthContext'
 import {
   XMarkIcon,
   UserCircleIcon,
